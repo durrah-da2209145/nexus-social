@@ -1123,7 +1123,94 @@ h1, h2, h3, h4, h5, h6 {
    - Post cards
    - Create post form
    - Post interactions
-   
+*/
+ /* Post cards */
+.post, .post-full {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.post h4, .post-full h3 {
+    margin-bottom: 0.5rem;
+    color: var(--accent-purple);
+}
+
+.post p, .post-full p {
+    color: var(--text-primary);
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.post small, .post-full small {
+    color: var(--text-secondary);
+}
+
+.post-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.post-actions button {
+    background-color: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 0.35rem 0.75rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.post-actions button:hover {
+    background-color: var(--accent-purple);
+    color: white;
+    border-color: var(--accent-purple);
+}
+
+.post-actions a {
+    text-decoration: none;
+    color: var(--accent-purple-light);
+    font-size: 0.85rem;
+}
+
+.post-actions a:hover {
+    color: var(--accent-purple);
+}
+
+/* Single post full view */
+.post-full {
+    padding: 2rem;
+}
+
+/* Loading spinner */
+.post-full .loading-spinner {
+    padding: 3rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .post, .post-full { padding: 1rem; }
+    .post h4, .post-full h3 { font-size: 1rem; }
+    .post p, .post-full p { font-size: 0.9rem; }
+    .post-actions button, .post-actions a { font-size: 0.8rem; }
+}
+
+@media (max-width: 768px) {
+    .post-actions { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+}
+
+@media (max-width: 480px) {
+    .post p, .post-full p { font-size: 0.85rem; }
+    .post-actions button, .post-actions a { font-size: 0.75rem; }
+}
+
+/*
    MEMBER 3: Add interaction styles here
    - Like button styling
    - Comment section styling
