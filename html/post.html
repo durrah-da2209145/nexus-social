@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nexus - Post</title>
     <link rel="stylesheet" href="../css/style.css">
 </head>
-<body>
+
+<body class="post-page">
     <!-- 
         ====================================================
         MEMBER 2: Implement Single Post View in feed.js
@@ -25,36 +27,38 @@
     </nav>
 
     <div class="post-container">
-        <!-- MEMBER 2: Single Post (implement in feed.js) -->
-        <div class="post-full" id="singlePostContainer">
+        <!-- Post -->
+        <div id="singlePostContainer">
             <div class="loading-spinner">
                 <div class="spinner"></div>
             </div>
         </div>
 
-        <!-- MEMBER 3: Comments Section (implement in interactions.js) -->
-        <div class="comments-section-full">
-            <h3>Comments</h3>
-            
-            <div class="add-comment">
-                <input type="text" id="commentInput" placeholder="Add a comment...">
-                <button id="submitComment" class="btn-post">Comment</button>
-            </div>
+        <!-- No Post Message -->
+        <div id="noPostMessage" style="display:none; text-align:center;">
+            <h3>No posts yet.</h3>
+        </div>
 
-            <div id="commentsList" class="comments-list">
-                <!-- Comments will be loaded here -->
-            </div>
+        <!-- Comments -->
+        <div id="commentsSection" style="display:none;">
+            <h3>Comments</h3>
+
+            <input type="text" id="commentInput" placeholder="Add a comment...">
+            <button id="submitComment">Comment</button>
+
+            <div id="commentsList"></div>
         </div>
     </div>
 
     <!-- Core scripts (Member 1) -->
     <script src="../js/storage.js"></script>
     <script src="../js/auth.js"></script>
-    
+
     <!-- Member 2: All post functionality (feed AND single post) -->
     <script src="../js/feed.js"></script>
-    
+
     <!-- Member 3: Comments and interactions -->
     <script src="../js/interactions.js"></script>
 </body>
+
 </html>

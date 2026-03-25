@@ -24,8 +24,35 @@ A social media platform front-end built with HTML, CSS, and Vanilla JavaScript.
 2. Open `index.html` in your browser
 3. Register a new account
 4. Login to access the feed placeholder
+ ---------------------------------------------------------
 
 ## Next Steps for Team
 - **Member 2**: Implement posts and feed
-- **Member 3**: Add likes, comments, follows
+
+---------------------------------------------------------
+
+## Team Member 3 - Interactions (Likes, Comments, Follow)
+- ✅ Implemented like/unlike functionality for posts
+- ✅ Dynamic like count updates
+- ✅ Comment system (add and display comments per post)
+- ✅ Follow/Unfollow users funcionality
+- ✅ UI updates for interactions (instant feedback)
+- ✅ Data persistance using localStorage (JSON format)
+
+## Features Implemented by Member 3
+- Users can like and unlike posts
+- Users can see updated like count
+- Users can write comments and see them under posts
+- Users can follow and unfollow other users
+- All data (likes, comments, follows) is stored in localStorage
+
+## Setup
+1. Login to your account
+2. Go to the feed page
+3. Click ❤️ to like/unlike posts
+4. Open a post to add and view comments
+5. Visit a user profile to follow/unfollow
+
+---------------------------------------------------------
+
 - **Member 4**: Create profile page and deliverables

@@ -11,36 +11,144 @@
  * TODO: Implement these functions
  */
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Check which page we're on
+document.addEventListener('DOMContentLoaded', function () {
     const currentPage = window.location.pathname.split('/').pop();
-    
+
     if (currentPage === 'feed.html') {
         loadFeed();
         setupCreatePost();
-    } else if (currentPage === 'post.html') {
+    }
+    else if (currentPage === 'post.html') {
         loadSinglePost();
     }
 });
 
 function loadFeed() {
-    // MEMBER 2: Load and display all posts in feed
-    const container = document.querySelector(".feed-container") || document.querySelector("#postsContainer");
+    const container = document.getElementById("postsContainer");
     if (!container) return;
 
     const posts = JSON.parse(localStorage.getItem('nexus_posts')) || [];
-    posts.sort((a,b) => b.createdAt - a.createdAt);
 
     container.innerHTML = posts.map(post => `
-        <div class="post" id="post-${post.id}">
-            <h4>${post.username}</h4>
+        <div class="post">
+            <h4>
+            <a href="profile.html?id=${post.userId}" class="username-link">
+                ${post.username}
+            </a>
+            </h4>
             <p>${post.content}</p>
-            <div class="post-actions">
-                ${Storage.getCurrentUser()?.id === post.userId ? `<button onclick="deletePost('${post.id}')">Delete</button>` : ''}
-                <a href="post.html?id=${post.id}">View</a>
-            </div>
+            <small>${new Date(post.createdAt).toLocaleString()}</small>
+        
+            <button 
+                data-post-id="${post.id}" 
+                onclick="Interactions.toggleLike('${post.id}')">
+                ❤️ ${post.likes ? post.likes.length : 0}
+            </button>
+
+            <a href="post.html?id=${post.id}">View</a>
         </div>
     `).join('');
+
+}
+
+function setupCreatePost() {
+    const form = document.getElementById('createPostForm');
+    const textarea = document.getElementById('postContent');
+
+    if (!form || !textarea) return;
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const content = textarea.value.trim();
+        if (!content) return;
+
+        const user = Storage.getCurrentUser();
+        if (!user) return;
+
+        let posts = JSON.parse(localStorage.getItem('nexus_posts')) || [];
+
+        posts.push({
+            id: Date.now().toString(),
+            userId: user.id,
+            username: user.username,
+            content: content,
+            createdAt: Date.now()
+        });
+
+        localStorage.setItem('nexus_posts', JSON.stringify(posts));
+
+        textarea.value = "";
+        loadFeed();
+    });
+}
+
+function loadingSinglePost() {
+    const container = document.getElementById('singlePostContainer');
+    if (!container) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const postId = params.get('id');
+
+    const posts = JSON.parse(localStorage.getItem('nexus_posts')) || [];
+    const post = posts.find(p => p.id === postId);
+
+    // No post
+    if (!post) {
+        container.innerHTML = "<p>No post found.</p>";
+        return;
+    }
+
+    // STEP 1: FORCE REMOVE SPINNER
+    const spinner = container.querySelector('.loading-spinner');
+    if (spinner) spinner.remove();
+
+    // STEP 2: CLEAR ANY LEFTOVER CONTENT
+    container.innerHTML = "";
+
+    // STEP 3: ADD POST
+    const postDiv = document.createElement("div");
+    postDiv.className = "post";
+
+    postDiv.innerHTML = `
+        <h3>${post.username}</h3>
+        <p>${post.content}</p>
+        <small>${new Date(post.createdAt).toLocaleString()}</small>
+    `;
+
+    container.appendChild(postDiv);
+}
+
+function setupCreatePost() {
+    const form = document.getElementById('createPostForm');
+    const textarea = document.getElementById('postContent');
+
+    if (!form || !textarea) return;
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const content = textarea.value.trim();
+        if (!content) return;
+
+        const user = Storage.getCurrentUser();
+        if (!user) return;
+
+        let posts = JSON.parse(localStorage.getItem('nexus_posts')) || [];
+
+        posts.push({
+            id: Date.now().toString(),
+            userId: user.id,
+            username: user.username,
+            content: content,
+            createdAt: Date.now()
+        });
+
+        localStorage.setItem('nexus_posts', JSON.stringify(posts));
+
+        textarea.value = "";
+        loadFeed();
+    });
 }
 
 // Convert a post object to HTML
@@ -59,60 +167,6 @@ function postToHTML(post) {
     `;
 }
 
-function loadSinglePost() {
-    // MEMBER 2: Load and display single post
-    // Get post ID from URL: post.html?id=123
-     const container = document.getElementById('singlePostContainer');
-    if (!container) return;
-
-    const params = new URLSearchParams(window.location.search);
-    const postId = params.get('id');
-
-    const posts = JSON.parse(localStorage.getItem('nexus_posts')) || [];
-    const post = posts.find(p => p.id === postId);
-
-    if (!post) {
-        container.innerHTML = "<p>Post not found</p>";
-        return;
-    }
-
-    container.innerHTML = `
-        <h3>${post.username}</h3>
-        <p>${post.content}</p>
-        <small>Posted on ${new Date(post.createdAt).toLocaleString()}</small>
-        ${Storage.getCurrentUser()?.id === post.userId ? `<button onclick="deletePost('${post.id}')">Delete</button>` : ''}
-    `;
-}
-
-function setupCreatePost() {
-    // MEMBER 2: Handle post creation form
-    const form = document.getElementById('createPostForm');
-    if (!form) return;
-
-    form.addEventListener('submit', e => {
-        e.preventDefault();
-        const textarea = form.querySelector('textarea');
-        const content = textarea.value.trim();
-        if (!content) return alert("Post cannot be empty");
-
-        const currentUser = Storage.getCurrentUser();
-        if (!currentUser) return alert("You must be logged in");
-
-        const posts = JSON.parse(localStorage.getItem('nexus_posts')) || [];
-        posts.push({
-            id: Date.now().toString(),
-            userId: currentUser.id,
-            username: currentUser.username,
-            content,
-            createdAt: Date.now()
-        });
-
-        localStorage.setItem('nexus_posts', JSON.stringify(posts));
-        textarea.value = '';
-        loadFeed();
-    });
-}
-
 function deletePost(postId) {
     // MEMBER 2: Delete post
     let posts = JSON.parse(localStorage.getItem('nexus_posts')) || [];
@@ -121,7 +175,8 @@ function deletePost(postId) {
 
     if (window.location.pathname.includes('feed.html')) {
         loadFeed();
-    } else {
+    }
+    else {
         window.location.href = 'feed.html';
     }
 }
