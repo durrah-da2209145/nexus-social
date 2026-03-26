@@ -22,6 +22,16 @@ function initializeStorage() {
 // Call initializeStorage after STORAGE_KEYS is defined
 initializeStorage();
 
+//  Add Followers/FollowingTO existing users ===== person 4
+let users = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS)) || [];
+
+users = users.map(user => ({
+    followers: [],
+    following: [],
+    ...user
+}));////
+
+localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
 // User operations
 function getUsers() {
     return JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS)) || [];
@@ -49,6 +59,9 @@ function createUser(userData) {
         password: btoa(userData.password),
         bio: '',
         profilePic: '',
+        // added by person 4
+        followers: [],
+        following: [], //
         createdAt: new Date().toISOString()
     };
     
@@ -96,7 +109,55 @@ function isAuthenticated() {
 function logout() {
     localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
 }
+//person 4 addition 
+function getUserById(id) {
+    const users = getUsers();
+    return users.find(u => u.id == id);
+}
 
+function updateUser(updatedUser) {
+    let users = getUsers();
+
+    users = users.map(user => {
+        if (user.id == updatedUser.id) {
+            return { ...user, ...updatedUser };
+        }
+        return user;
+    });
+
+    saveUsers(users);
+}
+// POSTS OPERATIONS
+function getPosts() {
+    return JSON.parse(localStorage.getItem(STORAGE_KEYS.POSTS)) || [];
+}
+
+function savePosts(posts) {
+    localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(posts));
+}
+
+function createPost(postData) {
+    const posts = getPosts();
+    
+    const newPost = {
+        id: Date.now().toString(),
+        content: postData.content,
+        authorId: postData.authorId,   // store user ID
+        createdAt: new Date().toISOString()
+    };
+    
+    posts.push(newPost);
+    savePosts(posts);
+    
+    return newPost;
+}
+
+// Optional: get posts by user
+function getPostsByUser(userId) {
+    const posts = getPosts();
+    return posts.filter(p => p.authorId === userId);
+}
+///
 // Export
 window.Storage = {
     createUser,
@@ -105,5 +166,11 @@ window.Storage = {
     getCurrentUser,
     setCurrentUser,
     isAuthenticated,
-    logout
+    logout,
+    getUserById,     // added by memeber 4
+    updateUser,       // added ....
+    getPosts,         // added ...
+    savePosts,        // added ...
+    createPost,       // added ...
+    getPostsByUser
 };

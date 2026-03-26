@@ -6,109 +6,112 @@
     <title>Nexus - Profile</title>
     <link rel="stylesheet" href="../css/style.css">
 </head>
+
 <body>
-    <!-- 
-        ====================================================
-        MEMBER 4: Implement User Profile
-        - Display user info (username, bio, profile pic)
-        - Edit own profile
-        - Show user's posts (integrate with Member 2)
-        - Follow/unfollow button (integrate with Member 3)
-        ====================================================
-    -->
 
-    <nav class="navbar">
-        <div class="nav-container">
-            <a href="feed.html" class="logo">nexus</a>
-            <div class="nav-links">
-                <!-- MEMBER 4: Add dynamic navigation -->
-            </div>
+<!-- NAVBAR -->
+<nav class="navbar">
+    <div class="nav-container">
+        <a href="feed.html" class="logo">nexus</a>
+
+        <div class="nav-links">
+            <a href="feed.html" class="back-btn">← Back to Feed</a>
         </div>
-    </nav>
+    </div>
+</nav>
 
-    <div class="profile-container">
-        <!-- MEMBER 4: Profile Header -->
-        <div class="profile-header">
-            <div class="profile-cover"></div>
-            <div class="profile-info">
+<!-- PROFILE -->
+<div class="profile-container">
+
+    <div class="profile-header">
+
+        <!-- COVER -->
+        <div class="profile-cover"></div>
+
+        <!-- INFO -->
+        <div class="profile-info">
+
+            <!-- TOP ROW (avatar + text) -->
+            <div class="profile-top">
+
                 <div class="profile-avatar-large" id="profileAvatar"></div>
-                
+
                 <div class="profile-details">
                     <h1 id="profileUsername">Loading...</h1>
-                    <p id="profileBio" class="profile-bio">This user hasn't added a bio yet.</p>
-                    
+
+                    <p id="profileBio" class="profile-bio">
+                        This user hasn't added a bio yet.
+                    </p>
+
                     <div class="profile-stats">
                         <div class="stat-item">
                             <span class="stat-value" id="profilePostsCount">0</span>
                             <span class="stat-label">Posts</span>
                         </div>
+
                         <div class="stat-item">
                             <span class="stat-value" id="profileFollowersCount">0</span>
                             <span class="stat-label">Followers</span>
                         </div>
+
                         <div class="stat-item">
                             <span class="stat-value" id="profileFollowingCount">0</span>
                             <span class="stat-label">Following</span>
                         </div>
                     </div>
 
-                    <!-- MEMBER 4: Edit profile button (only for own profile) -->
-                    <button id="editProfileBtn" class="btn btn-secondary">Edit profile</button>
-                    
-                    <!-- MEMBER 3: Follow button (only for other profiles) -->
-                    <button id="followBtn" class="btn btn-primary">Follow</button>
-                </div>
-            </div>
-        </div>
+                    <!-- BUTTONS -->
+                    <div class="profile-actions">
+                        <button id="editProfileBtn" class="btn btn-secondary">Edit profile</button>
+                        <button id="followBtn" class="btn btn-primary">Follow</button>
+                    </div>
 
-        <!-- MEMBER 4: Edit Profile Modal -->
-        <div id="editModal" class="modal" style="display: none;">
-            <div class="modal-content">
-                <h2>Edit profile</h2>
-                <form id="editProfileForm">
-                    <div class="form-group">
-                        <label>Username</label>
-                        <input type="text" id="editUsername" class="form-input">
-                    </div>
-                    <div class="form-group">
-                        <label>Bio</label>
-                        <textarea id="editBio" class="form-input" rows="4"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Profile picture URL</label>
-                        <input type="url" id="editProfilePic" class="form-input">
-                    </div>
-                    <div class="modal-actions">
-                        <button type="submit" class="btn btn-primary">Save</button>
-                        <button type="button" class="btn btn-secondary" id="closeModal">Cancel</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- MEMBER 2 & 4: User's Posts -->
-        <div class="profile-posts">
-            <h2>Posts</h2>
-            <div id="userPostsContainer" class="posts-container">
-                <!-- MEMBER 2: Posts will be loaded here -->
-                <div class="loading-spinner">
-                    <div class="spinner"></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Core scripts (Member 1) -->
-    <script src="../js/storage.js"></script>
-    <script src="../js/auth.js"></script>
-    
-    <!-- Member 2: Post functionality -->
-    <script src="../js/feed.js"></script>
-    
-    <!-- Member 3: Interactions (follow) -->
-    <script src="../js/interactions.js"></script>
-    
-    <!-- Member 4: Profile functionality -->
-    <script src="../js/profile.js"></script>
+    <!-- POSTS -->
+    <div class="profile-posts">
+        <h2>Posts</h2>
+
+        <div id="userPostsContainer" class="posts-container">
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL -->
+<div id="editProfileModal" class="modal-overlay" style="display: none;">
+  <div class="modal">
+    <h2>Edit profile</h2>
+
+    <form id="editProfileForm">
+      <label>Username</label>
+      <input type="text" id="editUsername" />
+
+      <label>Bio</label>
+      <textarea id="editBio"></textarea>
+
+  <label>Upload Profile Picture</label>
+<input type="file" id="uploadProfilePic" accept="image/*" />
+
+      <div class="modal-actions">
+        <button type="submit" id="saveProfileBtn" class="btn primary">Save</button>
+        <button type="button" id="closeProfileBtn" class="btn">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- SCRIPTS -->
+<script src="../js/storage.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/feed.js"></script>
+<script src="../js/interactions.js"></script>
+<script src="../js/profile.js"></script>
+
 </body>
 </html>
