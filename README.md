@@ -76,4 +76,29 @@ A social media platform front-end built with HTML, CSS, and Vanilla JavaScript.
 
 ---------------------------------------------------------
 
-- **Member 4**: Create profile page and deliverables
+# Team Member 4 – Profile Page & User Management
+✅ Implemented dynamic profile page
+✅ Display user information: username, bio, avatar
+✅ Edit own profile (username, bio, avatar) with modal
+✅ Show user’s posts on profile page
+✅ Follow/Unfollow other users (does not auto-follow back)
+✅ Followers and following counts update dynamically
+✅ Profile page integrates with storage.js for persistence
+✅ Responsive design for profile page
+✅ Profile avatar shows initials if no picture uploaded
+
+# Features Implemented by Member 4
+Users can view their own profile and others’ profiles
+Users can edit their own profile and upload avatar images
+Followers and following counts are updated in real-time
+Follow/unfollow works only for other users; own profile does not show a follow button
+User posts are displayed in the profile page with post date
+All changes are persisted using Storage module (localStorage)
+Profile page integrates smoothly with posts and interactions implemented by other members
+
+# Setup
+Login to your account
+Click on your profile icon or visit another user’s profile via URL
+Edit your profile using the “Edit Profile” button (username, bio, avatar)
+Follow or unfollow other users
+View your posts and others’ posts on the profile page
