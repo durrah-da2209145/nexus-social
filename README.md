@@ -26,8 +26,29 @@ A social media platform front-end built with HTML, CSS, and Vanilla JavaScript.
 4. Login to access the feed placeholder
  ---------------------------------------------------------
 
-## Next Steps for Team
-- **Member 2**: Implement posts and feed
+## Team Member 2 - Implement posts and feed
+- ✅ Displaying posts in feed
+- ✅ Create new posts
+- ✅ Delete own posts
+- ✅ Single post view (post.html)
+- ✅ Connect posts with logged-in user
+- ✅ Data stored using localStorage
+
+## Features Implemented by Member 2
+- Users can create a new post from the feed page
+- Posts are displayed in the feed (newest first)
+- Users can delete only their own posts
+- Each post has a “View” button to open full post
+- Single post page shows full content and date
+- Posts are saved in localStorage
+
+## Setup
+1. Login to your account
+2. Go to the feed page
+3. Write a post and click submit
+4. View posts in the feed
+5. Click "View" to open a single post
+6. Delete your post if needed
 
 ---------------------------------------------------------
 
