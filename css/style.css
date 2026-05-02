@@ -2141,3 +2141,357 @@ MEMBER 4: Add profile styles here
 .comment-item strong { flex-basis: auto; }
 .comment-item p { margin: 0; flex-basis: 100%; }
 .comment-item small { color: #888; font-size: 0.75rem; }
+
+/* updated profile style */
+.create-post-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 28px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 22px 48px rgba(0, 0, 0, 0.22);
+    transition: all 0.3s ease;
+}
+
+.create-post-section:hover {
+    border-color: rgba(139, 92, 246, 0.3);
+}
+
+.create-post-section textarea {
+    width: 100%;
+    padding: 1rem;
+    border: 2px solid var(--border-color);
+    border-radius: 20px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    font-family: inherit;
+    resize: vertical;
+    transition: all 0.3s ease;
+    margin-bottom: 1rem;
+}
+
+.create-post-section textarea:focus {
+    outline: none;
+    border-color: var(--accent-purple);
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.create-post-section textarea::placeholder {
+    color: var(--text-secondary);
+}
+
+/* Post Button on Profile Page */
+#submitPostBtn {
+    background: var(--gradient-1);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 999px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: auto;
+    min-width: 140px;
+    position: relative;
+    overflow: hidden;
+}
+
+#submitPostBtn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+#submitPostBtn:hover::before {
+    left: 100%;
+}
+
+#submitPostBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 30px -10px rgba(139, 92, 246, 0.4);
+}
+
+#submitPostBtn:active {
+    transform: translateY(0);
+}
+
+/* Posts Divider */
+.posts-divider {
+    margin: 1.5rem 0 1rem;
+}
+
+.posts-divider hr {
+    border: none;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+    margin-bottom: 1rem;
+}
+
+.posts-divider h3 {
+    font-size: 1.3rem;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+/* Profile Posts Container */
+#userPostsContainer {
+    margin-top: 1rem;
+}
+
+/* Profile Post Cards */
+.profile-post-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 1.2rem;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+}
+
+.profile-post-card:hover {
+    border-color: rgba(139, 92, 246, 0.3);
+    transform: translateX(5px);
+}
+
+.profile-post-card p {
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 0.75rem;
+}
+
+.profile-post-card small {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
+
+/* Delete Post Button on Profile */
+.delete-post-btn {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: var(--error-red);
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 0.5rem;
+}
+
+.delete-post-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    transform: scale(1.05);
+}
+
+/* Modal Styles (already exists, but ensure these are present) */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 28px;
+    padding: 2rem;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+    animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal h2, .modal h3 {
+    margin-bottom: 1rem;
+    color: var(--text-primary);
+}
+
+.modal label {
+    display: block;
+    margin: 0.75rem 0 0.25rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.modal input,
+.modal textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    font-family: inherit;
+}
+
+.modal input:focus,
+.modal textarea:focus {
+    outline: none;
+    border-color: var(--accent-purple);
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.modal-actions button {
+    padding: 0.6rem 1.2rem;
+    border-radius: 999px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+/* Follow Modal */
+#followModal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+#followModal .modal-content {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 28px;
+    padding: 2rem;
+    width: 90%;
+    max-width: 400px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+#followModal h3 {
+    margin-bottom: 1rem;
+    color: var(--text-primary);
+}
+
+#followModalList {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0;
+}
+
+#followModalList li {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#followModalList li:last-child {
+    border-bottom: none;
+}
+
+.view-profile-btn {
+    background: rgba(139, 92, 246, 0.1);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    color: var(--accent-purple-light);
+    padding: 0.3rem 0.8rem;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.3s ease;
+}
+
+.view-profile-btn:hover {
+    background: rgba(139, 92, 246, 0.2);
+    transform: scale(1.05);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .create-post-section {
+        padding: 1rem;
+    }
+    
+    #submitPostBtn {
+        width: 100%;
+        padding: 0.7rem;
+    }
+    
+    .profile-post-card:hover {
+        transform: translateX(0);
+    }
+    
+    .modal {
+        padding: 1.5rem;
+        width: 95%;
+    }
+    
+    #followModal .modal-content {
+        padding: 1.5rem;
+        width: 95%;
+    }
+}
+
+@media (max-width: 480px) {
+    .create-post-section textarea {
+        font-size: 0.85rem;
+        padding: 0.75rem;
+    }
+    
+    #submitPostBtn {
+        font-size: 0.85rem;
+        min-width: 100%;
+    }
+    
+    .posts-divider h3 {
+        font-size: 1.1rem;
+    }
+}
+
+/* Animation for new posts */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.profile-post-card.new-post {
+    animation: fadeInUp 0.5s ease;
+}
