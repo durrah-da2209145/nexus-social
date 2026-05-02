@@ -136,7 +136,7 @@ function loadComments() {
     list.innerHTML = "";
 
     let updated = false;
-    post.comments.forEach(c => {
+    post.comments.forEach((c, index) => {
 
         if (!c.createdAt) {
             c.createdAt = Date.now();
@@ -144,12 +144,16 @@ function loadComments() {
         }
 
         const user = users.find(u => u.id === c.userId);
+        const currentUser = Storage.getCurrentUser();
+        // FIX: Show delete button if this comment belongs to the current user
+        const canDelete = currentUser && currentUser.id === c.userId;
 
         list.innerHTML += `
-            <div class="comment-item">
-                <strong><a href="profile.html?id=${user.id}" class="username-link">${user ? user.username : "User"}</a></strong>
-                <p>${c.text}</p>
+            <div class="comment-item" id="comment-${index}">
+                <strong><a href="profile.html?id=${user ? user.id : ''}" class="username-link">${user ? user.username : "User"}</a></strong>
+                <p>${c.content}</p>
                 <small>${new Date(c.createdAt).toLocaleString()}</small>
+                ${canDelete ? `<button class="delete-comment-btn" onclick="deleteComment(${index})">Delete</button>` : ''}
             </div>
         `;
     });
@@ -157,6 +161,27 @@ function loadComments() {
     if (updated) {
         localStorage.setItem('nexus_posts', JSON.stringify(posts));
     }
+}
+
+// FIX: Delete comment function — was missing entirely
+function deleteComment(commentIndex) {
+    const params = new URLSearchParams(window.location.search);
+    const postId = params.get('id');
+
+    const currentUser = Storage.getCurrentUser();
+    if (!currentUser) return;
+
+    let posts = JSON.parse(localStorage.getItem('nexus_posts')) || [];
+    const post = posts.find(p => p.id === postId);
+    if (!post || !post.comments) return;
+
+    // Only allow deleting own comments
+    const comment = post.comments[commentIndex];
+    if (!comment || comment.userId !== currentUser.id) return;
+
+    post.comments.splice(commentIndex, 1);
+    localStorage.setItem('nexus_posts', JSON.stringify(posts));
+    loadComments();
 }
 
 // Follow/Unfollow
@@ -187,13 +212,31 @@ function setupFollowButton() {
 
         if (index > -1) {
             user.following.splice(index, 1);
+            // also remove from target's followers
+            const target = users.find(u => u.id === profileId);
+            if (target && target.followers) {
+                target.followers = target.followers.filter(id => id !== currentUser.id);
+            }
         }
         else {
             user.following.push(profileId);
+            // also add to target's followers
+            const target = users.find(u => u.id === profileId);
+            if (target) {
+                if (!target.followers) target.followers = [];
+                target.followers.push(currentUser.id);
+            }
         }
 
         localStorage.setItem('nexus_users', JSON.stringify(users));
         updateFollowUI(btn, user.following.includes(profileId));
+
+        // FIX: Update the follower count shown on the profile page immediately
+        const followerCountEl = document.getElementById('profileFollowersCount');
+        if (followerCountEl) {
+            const updatedTarget = users.find(u => u.id === profileId);
+            followerCountEl.textContent = (updatedTarget?.followers || []).length;
+        }
     });
 }
 

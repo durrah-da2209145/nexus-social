@@ -39,9 +39,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Posts
         const posts = JSON.parse(localStorage.getItem("nexus_posts")) || [];
-        const userPosts = posts.filter(p => p.userId == profileUser.id);
+        const userPosts = posts.filter(p => (p.userId == profileUser.id || p.authorId == profileUser.id));
 
         document.getElementById("profilePostsCount").textContent = userPosts.length;
+
+        // FIX: Populate followers/following counts (elements exist in HTML but were never filled)
+        const allUsers = JSON.parse(localStorage.getItem("nexus_users")) || [];
+        const fullProfileUser = allUsers.find(u => u.id == profileUser.id);
+        const followers = fullProfileUser?.followers || [];
+        const following = fullProfileUser?.following || [];
+        document.getElementById("profileFollowersCount").textContent = followers.length;
+        document.getElementById("profileFollowingCount").textContent = following.length;
 
         const container = document.getElementById("userPostsContainer");
         container.innerHTML = "";
@@ -133,5 +141,8 @@ function saveProfileEdit(e) {
 
     // ===== RUN =====
     loadProfile();
+
+    // FIX: Wire up the follow button (setupFollowButton was defined but never called)
+    setupFollowButton();
     
 });

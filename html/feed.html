@@ -36,20 +36,50 @@
     <!-- Feed Container -->
     <div class="feed-container">
 
-        <!-- CREATE POST -->
-        <form id="createPostForm">
-            <textarea id="postContent" placeholder="What's on your mind?" required></textarea>
-
-            <div class="post-actions-row">
-                <button type="submit">Post</button>
+        <!-- LEFT SIDEBAR -->
+        <aside class="sidebar left-sidebar">
+            <div class="sidebar-card" id="sidebarSummary">
+                <h3>Welcome back</h3>
+                <p>See what friends are sharing and stay connected with live activity.</p>
+                <div class="sidebar-meta">
+                    <div><strong id="followingCount">0</strong> Following</div>
+                    <div><strong id="onlineCount">0</strong> Online</div>
+                </div>
             </div>
 
-            <div class="feed-divider"></div> <!-- ✅ MOVED INSIDE -->
-        </form>
+            <div class="sidebar-card">
+                <h3>Trending</h3>
+                <ul class="trending-list" id="trendingList"></ul>
+            </div>
+        </aside>
 
-        <!-- POSTS -->
-        <div id="postsContainer"></div>
+        <!-- MAIN FEED -->
+        <main class="feed-main">
+            <form id="createPostForm">
+                <textarea id="postContent" placeholder="What's happening?" required></textarea>
 
+                <div class="post-actions-row">
+                    <button type="submit">Post</button>
+                </div>
+
+                <div class="feed-divider"></div>
+            </form>
+
+            <div id="postsContainer"></div>
+        </main>
+
+        <!-- RIGHT SIDEBAR -->
+        <aside class="sidebar right-sidebar">
+            <div class="sidebar-card">
+                <h3>Active now</h3>
+                <ul class="online-list" id="onlineList"></ul>
+            </div>
+
+            <div class="sidebar-card">
+                <h3>Who to follow</h3>
+                <ul class="suggestions-list" id="suggestionsList"></ul>
+            </div>
+        </aside>
     </div>
 
     <!-- Core scripts (Member 1) -->

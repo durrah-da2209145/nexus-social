@@ -24,5 +24,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (protectedPages.includes(currentPage) && !isLoggedIn) {
         window.location.href = 'index.html';
+        return;
+    }
+
+    // FIX: Wire up the logout button (was defined in HTML but never had a listener)
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            Storage.logout();
+            window.location.href = 'index.html';
+        });
     }
 });

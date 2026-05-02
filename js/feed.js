@@ -16,10 +16,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (currentPage === 'feed.html') {
         loadFeed();
+        loadSidebarData();
         setupCreatePost();
     }
     else if (currentPage === 'post.html') {
-        loadSinglePost();
+        loadSinglePost();  // FIX: this now correctly calls the function below
     }
 });
 
@@ -29,11 +30,16 @@ function loadFeed() {
 
     const posts = JSON.parse(localStorage.getItem('nexus_posts')) || [];
 
-    container.innerHTML = posts.map(post => `
+    container.innerHTML = posts.map(post => {
+        const authorId = post.userId || post.authorId;
+        const username = post.username || 'Unknown';
+        const likes = Array.isArray(post.likes) ? post.likes.length : 0;
+
+        return `
         <div class="post">
             <h4>
-            <a href="profile.html?id=${post.userId}" class="username-link">
-                ${post.username}
+            <a href="profile.html?id=${authorId}" class="username-link">
+                ${username}
             </a>
             </h4>
             <p>${post.content}</p>
@@ -42,13 +48,83 @@ function loadFeed() {
             <button 
                 data-post-id="${post.id}" 
                 onclick="Interactions.toggleLike('${post.id}')">
-                ❤️ ${post.likes ? post.likes.length : 0}
+                ❤️ ${likes}
             </button>
 
             <a href="post.html?id=${post.id}">View</a>
         </div>
-    `).join('');
+    `;
+    }).join('');
 
+    loadSidebarData();
+}
+
+function getTrendingHashtags(posts) {
+    const hashtagCounts = {};
+    const regex = /#(\w+)/g;
+
+    posts.forEach(post => {
+        let match;
+        while ((match = regex.exec(post.content))) {
+            const tag = `#${match[1]}`;
+            hashtagCounts[tag] = (hashtagCounts[tag] || 0) + 1;
+        }
+    });
+
+    const sortedHashtags = Object.entries(hashtagCounts)
+        .sort((a, b) => b[1] - a[1])
+        .map(([tag]) => tag);
+
+    return sortedHashtags.length ? sortedHashtags.slice(0, 4) : ['#Nexus', '#Social', '#Updates', '#Connect'];
+}
+
+function loadSidebarData() {
+    const currentUser = Storage.getCurrentUser() || {};
+    const users = Storage.getUsers();
+    const posts = Storage.getPosts();
+    const otherUsers = users.filter(user => user.id !== currentUser.id);
+
+    const followingCount = currentUser.following?.length ?? otherUsers.length;
+    const followersCount = currentUser.followers?.length ?? 0;
+    const onlineCount = otherUsers.length;
+
+    const sidebarSummary = document.getElementById('sidebarSummary');
+    if (sidebarSummary) {
+        sidebarSummary.innerHTML = `
+            <h3>Welcome back${currentUser.username ? ', ' + currentUser.username : ''}</h3>
+            <p>See what friends are sharing and stay connected with live activity.</p>
+            <div class="sidebar-meta">
+                <div><strong>${followingCount}</strong> Following</div>
+                <div><strong>${onlineCount}</strong> Online</div>
+            </div>
+        `;
+    }
+
+    const trendingList = document.getElementById('trendingList');
+    if (trendingList) {
+        const hashtags = getTrendingHashtags(posts);
+        trendingList.innerHTML = hashtags.map(tag => `<li>${tag}</li>`).join('');
+    }
+
+    const onlineList = document.getElementById('onlineList');
+    if (onlineList) {
+        onlineList.innerHTML = otherUsers.slice(0, 4).map(user => `
+            <li><span class="online-dot"></span>${user.username}</li>
+        `).join('') || '<li>No users online</li>';
+    }
+
+    const suggestionsList = document.getElementById('suggestionsList');
+    if (suggestionsList) {
+        suggestionsList.innerHTML = otherUsers.slice(0, 3).map(user => `
+            <li class="suggest-item">
+                <div>
+                    <strong>${user.username}</strong>
+                    <small>@${user.username.toLowerCase()}</small>
+                </div>
+                <button class="btn btn-secondary" type="button">Follow</button>
+            </li>
+        `).join('') || '<li>No suggestions available</li>';
+    }
 }
 
 function setupCreatePost() {
@@ -83,8 +159,12 @@ function setupCreatePost() {
     });
 }
 
-function loadingSinglePost() {
+// FIX: Renamed from loadingSinglePost (typo) to loadSinglePost, and wired up post rendering
+function loadSinglePost() {
     const container = document.getElementById('singlePostContainer');
+    const commentsSection = document.getElementById('commentsSection');
+    const noPost = document.getElementById('noPostMessage');
+
     if (!container) return;
 
     const params = new URLSearchParams(window.location.search);
@@ -93,30 +173,42 @@ function loadingSinglePost() {
     const posts = JSON.parse(localStorage.getItem('nexus_posts')) || [];
     const post = posts.find(p => p.id === postId);
 
-    // No post
+    // No post found
     if (!post) {
-        container.innerHTML = "<p>No post found.</p>";
+        container.innerHTML = '';
+        if (noPost) noPost.style.display = 'block';
+        if (commentsSection) commentsSection.style.display = 'none';
         return;
     }
 
-    // STEP 1: FORCE REMOVE SPINNER
-    const spinner = container.querySelector('.loading-spinner');
-    if (spinner) spinner.remove();
+    // Show the post itself
+    if (noPost) noPost.style.display = 'none';
+    if (commentsSection) commentsSection.style.display = 'block';
 
-    // STEP 2: CLEAR ANY LEFTOVER CONTENT
-    container.innerHTML = "";
+    const currentUser = Storage.getCurrentUser();
+    const authorId = post.userId || post.authorId;
+    const username = post.username || 'Unknown';
+    const showDelete = currentUser && currentUser.id === authorId;
 
-    // STEP 3: ADD POST
-    const postDiv = document.createElement("div");
-    postDiv.className = "post";
-
-    postDiv.innerHTML = `
-        <h3>${post.username}</h3>
-        <p>${post.content}</p>
-        <small>${new Date(post.createdAt).toLocaleString()}</small>
+    container.innerHTML = `
+        <div class="post single-post">
+            <h4>
+                <a href="profile.html?id=${authorId}" class="username-link">
+                    ${username}
+                </a>
+            </h4>
+            <p>${post.content}</p>
+            <small>${new Date(post.createdAt).toLocaleString()}</small>
+            <div class="post-actions">
+                <button
+                    data-post-id="${post.id}"
+                    onclick="Interactions.toggleLike('${post.id}')">
+                    ❤️ ${post.likes ? post.likes.length : 0}
+                </button>
+                ${showDelete ? `<button onclick="deletePost('${post.id}')">Delete</button>` : ''}
+            </div>
+        </div>
     `;
-
-    container.appendChild(postDiv);
 }
 
 function setupCreatePost() {
@@ -154,10 +246,12 @@ function setupCreatePost() {
 // Convert a post object to HTML
 function postToHTML(post) {
     const currentUser = Storage.getCurrentUser();
-    const showDelete = currentUser && currentUser.id === post.userId;
+    const authorId = post.userId || post.authorId;
+    const username = post.username || 'Unknown';
+    const showDelete = currentUser && currentUser.id === authorId;
     return `
         <div class="post" id="post-${post.id}">
-            <h4>${post.username}</h4>
+            <h4>${username}</h4>
             <p>${post.content}</p>
             <div class="post-actions">
                 ${showDelete ? `<button onclick="deletePost('${post.id}')">Delete</button>` : ''}

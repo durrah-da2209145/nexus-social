@@ -142,7 +142,11 @@ function createPost(postData) {
     const newPost = {
         id: Date.now().toString(),
         content: postData.content,
-        authorId: postData.authorId,   // store user ID
+        userId: postData.userId ?? postData.authorId,
+        authorId: postData.authorId ?? postData.userId,
+        username: postData.username,
+        likes: postData.likes || [],
+        comments: postData.comments || [],
         createdAt: new Date().toISOString()
     };
     
@@ -155,7 +159,7 @@ function createPost(postData) {
 // Optional: get posts by user
 function getPostsByUser(userId) {
     const posts = getPosts();
-    return posts.filter(p => p.authorId === userId);
+    return posts.filter(p => (p.userId === userId || p.authorId === userId));
 }
 ///
 // Export
