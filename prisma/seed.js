@@ -94,13 +94,18 @@ const seed = async () => {
 
   const createdPosts = [];
   let postIndex = 0;
+
   for (const user of createdUsers) {
-    const count = 3 + Math.floor(Math.random() * 2);
+    const count = 5 + Math.floor(Math.random() * 4);
     for (let i = 0; i < count; i++) {
       const post = await prisma.post.create({
         data: {
           content: POST_CONTENTS[postIndex % POST_CONTENTS.length],
           authorId: user.id,
+
+          createdAt: new Date(
+            Date.now() - Math.floor(Math.random() * 90) * 24 * 60 * 60 * 1000
+          ),
         },
       });
       createdPosts.push(post);
@@ -110,14 +115,22 @@ const seed = async () => {
   console.log(`Created ${createdPosts.length} posts`);
 
   let commentCount = 0;
-  for (const post of createdPosts.slice(0, 15)) {
-    const commenters = shuffle(createdUsers.filter(u => u.id !== post.authorId)).slice(0, 3);
+
+  for (const post of createdPosts) {
+    const commenters = shuffle(
+      createdUsers.filter(u => u.id !== post.authorId)
+    ).slice(0, 4);
+
     for (const commenter of commenters) {
       await prisma.comment.create({
         data: {
           content: pick(COMMENT_CONTENTS),
           authorId: commenter.id,
           postId: post.id,
+          
+          createdAt: new Date(
+            Date.now() - Math.floor(Math.random() * 90) * 24 * 60 * 60 * 1000
+          ),
         },
       });
       commentCount++;
@@ -127,10 +140,16 @@ const seed = async () => {
 
   let likeCount = 0;
   for (const post of createdPosts) {
-    const voters = shuffle(createdUsers.filter(u => u.id !== post.authorId)).slice(0, 4);
+    const voters = shuffle(
+      createdUsers.filter(u => u.id !== post.authorId)
+    ).slice(0, 6);
+
     for (const voter of voters) {
       await prisma.like.create({
-        data: { userId: voter.id, postId: post.id },
+        data: {
+          userId: voter.id,
+          postId: post.id,
+        },
       });
       likeCount++;
     }
@@ -138,11 +157,18 @@ const seed = async () => {
   console.log(`Created ${likeCount} likes`);
 
   let followCount = 0;
+
   for (const user of createdUsers) {
-    const targets = shuffle(createdUsers.filter(u => u.id !== user.id)).slice(0, 4);
+    const targets = shuffle(
+      createdUsers.filter(u => u.id !== user.id)
+    ).slice(0, 5); // 🔥 MORE FOLLOW RELATIONS
+
     for (const target of targets) {
       await prisma.follow.create({
-        data: { followerId: user.id, followingId: target.id },
+        data: {
+          followerId: user.id,
+          followingId: target.id,
+        },
       });
       followCount++;
     }
