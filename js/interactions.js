@@ -168,16 +168,29 @@ function deleteComment(commentIndex) {
     const params = new URLSearchParams(window.location.search);
     const postId = params.get('id');
 
+    if (!postId) return;
+
     const currentUser = Storage.getCurrentUser();
     if (!currentUser) return;
 
     let posts = JSON.parse(localStorage.getItem('nexus_posts')) || [];
-    const post = posts.find(p => p.id === postId);
+
+    const postIdNum = Number(postId);
+    const post = posts.find(p => p.id === postIdNum);
+
     if (!post || !post.comments) return;
 
-    // Only allow deleting own comments
     const comment = post.comments[commentIndex];
-    if (!comment || comment.userId !== currentUser.id) return;
+
+    if (!comment) {
+        alert("Comment not found");
+        return;
+    }
+
+    if (comment.userId !== currentUser.id) {
+        alert("You can only delete your own comments");
+        return;
+    }
 
     post.comments.splice(commentIndex, 1);
     localStorage.setItem('nexus_posts', JSON.stringify(posts));

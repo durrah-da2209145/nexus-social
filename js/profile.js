@@ -74,7 +74,45 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Buttons show/hide
         const editBtn = document.getElementById("editProfileBtn");
+
+        // FOLLOW BUTTON
         const followBtn = document.getElementById("followBtn");
+
+        if (followBtn) {
+            followBtn.addEventListener("click", () => {
+                const currentUser = Storage.getCurrentUser();
+                const profileUser = getProfileUser();
+
+                if (!currentUser || !profileUser) return;
+
+                // prevent self-follow
+                if (currentUser.id === profileUser.id) {
+                    alert("You cannot follow yourself");
+                    return;
+                }
+
+                if (!currentUser.following) currentUser.following = [];
+
+                const index = currentUser.following.indexOf(profileUser.id);
+
+                if (index === -1) {
+                    // FOLLOW
+                    currentUser.following.push(profileUser.id);
+                } else {
+                    // UNFOLLOW
+                    currentUser.following.splice(index, 1);
+                }
+
+                // update user in storage
+                Storage.updateUser(currentUser);
+
+                // IMPORTANT: also update currentUser in localStorage
+                localStorage.setItem("currentUser", JSON.stringify(currentUser));
+
+                updateFollowButton();
+                updateFollowersCount();
+            });
+        }
 
         if (currentUser.id == profileUser.id) {
             editBtn.style.display = "block";
@@ -94,35 +132,91 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
   // ===== SAVE EDIT =====
-function saveProfileEdit(e) {
-    e.preventDefault(); // prevent form submission reload
+    function saveProfileEdit(e) {
+        e.preventDefault(); // prevent form submission reload
 
-    profileUser.username = document.getElementById("editUsername").value;
-    profileUser.bio = document.getElementById("editBio").value;
+        profileUser.username = document.getElementById("editUsername").value;
+        profileUser.bio = document.getElementById("editBio").value;
 
-    const uploadInput = document.getElementById("uploadProfilePic");
+        const uploadInput = document.getElementById("uploadProfilePic");
 
-    // If a file is uploaded
-    if (uploadInput.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            profileUser.profilePic = event.target.result; // Base64 image
+        // If a file is uploaded
+        if (uploadInput.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                profileUser.profilePic = event.target.result; // Base64 image
+                Storage.updateUser(profileUser);
+                Storage.setCurrentUser(profileUser);
+
+                document.getElementById("editProfileModal").style.display = "none";
+                loadProfile();
+            }
+            reader.readAsDataURL(uploadInput.files[0]);
+        } else {
+            // No new image uploaded, just save username/bio
             Storage.updateUser(profileUser);
             Storage.setCurrentUser(profileUser);
 
             document.getElementById("editProfileModal").style.display = "none";
             loadProfile();
         }
-        reader.readAsDataURL(uploadInput.files[0]);
-    } else {
-        // No new image uploaded, just save username/bio
-        Storage.updateUser(profileUser);
-        Storage.setCurrentUser(profileUser);
-
-        document.getElementById("editProfileModal").style.display = "none";
-        loadProfile();
     }
-}
+
+    function handleFollow() {
+        const currentUser = Storage.getCurrentUser();
+        const profileUser = getProfileUser(); // function you already use
+
+        if (!currentUser || !profileUser) return;
+
+        if (!currentUser.following) currentUser.following = [];
+
+        const isFollowing = currentUser.following.includes(profileUser.id);
+
+        if (isFollowing) {
+            // UNFOLLOW
+            currentUser.following = currentUser.following.filter(id => id !== profileUser.id);
+        } else {
+            // FOLLOW
+            currentUser.following.push(profileUser.id);
+        }
+
+        // Save updated user
+        Storage.updateUser(currentUser);
+
+        // Update UI
+        function updateFollowButton() {
+            const currentUser = Storage.getCurrentUser();
+            const profileUser = getProfileUser();
+            const btn = document.getElementById("followBtn");
+
+            if (!btn || !currentUser || !profileUser) return;
+
+            // ❗ hide button if viewing your own profile
+            if (currentUser.id === profileUser.id) {
+                btn.style.display = "none";
+                return;
+            }
+
+            const isFollowing = currentUser.following?.includes(profileUser.id);
+
+            btn.textContent = isFollowing ? "Unfollow" : "Follow";
+        }
+
+        function updateFollowersCount() {
+            const users = Storage.getUsers();
+            const profileUser = getProfileUser();
+
+            let count = 0;
+
+            users.forEach(user => {
+                if (user.following?.includes(profileUser.id)) {
+                    count++;
+                }
+            });
+
+            document.getElementById("profileFollowersCount").textContent = count;
+        }
+    }
 
     // ===== CLOSE MODAL =====
     function closeEditProfile() {
@@ -130,6 +224,11 @@ function saveProfileEdit(e) {
     }
 
     // ===== BUTTON EVENTS =====
+    document.addEventListener("DOMContentLoaded", () => {
+        updateFollowButton();
+        updateFollowersCount();
+    });
+    
     document.getElementById("editProfileBtn")
         ?.addEventListener("click", openEditProfile);
 
