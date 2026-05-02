@@ -46,9 +46,17 @@ document.addEventListener("DOMContentLoaded", () => {
         // FIX: Populate followers/following counts (elements exist in HTML but were never filled)
         const allUsers = JSON.parse(localStorage.getItem("nexus_users")) || [];
         const fullProfileUser = allUsers.find(u => u.id == profileUser.id);
-        const followers = fullProfileUser?.followers || [];
         const following = fullProfileUser?.following || [];
-        document.getElementById("profileFollowersCount").textContent = followers.length;
+
+        let followersCount = 0;
+
+        allUsers.forEach(user => {
+            if (user.following?.includes(profileUser.id)) {
+                followersCount++;
+            }
+        });
+
+        document.getElementById("profileFollowersCount").textContent = followersCount;
         document.getElementById("profileFollowingCount").textContent = following.length;
 
         const container = document.getElementById("userPostsContainer");
@@ -79,40 +87,34 @@ document.addEventListener("DOMContentLoaded", () => {
         const followBtn = document.getElementById("followBtn");
 
         if (followBtn) {
-            followBtn.addEventListener("click", () => {
-                const currentUser = Storage.getCurrentUser();
-                const profileUser = getProfileUser();
+                followBtn.addEventListener("click", () => {
+                    let users = JSON.parse(localStorage.getItem("nexus_users")) || [];
+                    let currentUser = Storage.getCurrentUser();
 
-                if (!currentUser || !profileUser) return;
+                    if (!currentUser.following) currentUser.following = [];
 
-                // prevent self-follow
-                if (currentUser.id === profileUser.id) {
-                    alert("You cannot follow yourself");
-                    return;
-                }
+                    const index = currentUser.following.indexOf(profileUser.id);
 
-                if (!currentUser.following) currentUser.following = [];
+                    if (index === -1) {
+                        currentUser.following.push(profileUser.id);
+                    } else {
+                        currentUser.following.splice(index, 1);
+                    }
 
-                const index = currentUser.following.indexOf(profileUser.id);
+                    // 🔥 SAVE PROPERLY
+                    users = users.map(u => {
+                        if (String(u.id) === String(currentUser.id)) {
+                            return currentUser;
+                        }
+                        return u;
+                    });
 
-                if (index === -1) {
-                    // FOLLOW
-                    currentUser.following.push(profileUser.id);
-                } else {
-                    // UNFOLLOW
-                    currentUser.following.splice(index, 1);
-                }
+                    localStorage.setItem("nexus_users", JSON.stringify(users));
+                    localStorage.setItem("currentUser", JSON.stringify(currentUser));
 
-                // update user in storage
-                Storage.updateUser(currentUser);
-
-                // IMPORTANT: also update currentUser in localStorage
-                localStorage.setItem("currentUser", JSON.stringify(currentUser));
-
-                updateFollowButton();
-                updateFollowersCount();
-            });
-        }
+                    loadProfile();
+                });
+            }
 
         if (currentUser.id == profileUser.id) {
             editBtn.style.display = "block";
@@ -135,27 +137,58 @@ document.addEventListener("DOMContentLoaded", () => {
     function saveProfileEdit(e) {
         e.preventDefault(); // prevent form submission reload
 
-        profileUser.username = document.getElementById("editUsername").value;
-        profileUser.bio = document.getElementById("editBio").value;
-
-        const uploadInput = document.getElementById("uploadProfilePic");
+       const newUsername = document.getElementById("editUsername").value;
+       const newBio = document.getElementById("editBio").value;
+     
+       profileUser.username = newUsername;
+       profileUser.bio = newBio;
+       
+       const uploadInput = document.getElementById("uploadProfilePic");
 
         // If a file is uploaded
         if (uploadInput.files[0]) {
             const reader = new FileReader();
             reader.onload = function(event) {
-                profileUser.profilePic = event.target.result; // Base64 image
-                Storage.updateUser(profileUser);
-                Storage.setCurrentUser(profileUser);
+                profileUser.profilePic = event.target.result;
+
+                let users = Storage.getUsers();
+
+                users = users.map(u => {
+                    if (u.id === profileUser.id) {
+                        return profileUser; // keep full object
+                    }
+                    return u;
+                });
+
+                Storage.saveUsers(users);
+
+                const currentUser = Storage.getCurrentUser();
+
+                if (currentUser && currentUser.id === profileUser.id) {
+                    localStorage.setItem("currentUser", JSON.stringify(profileUser));
+                }
 
                 document.getElementById("editProfileModal").style.display = "none";
                 loadProfile();
             }
             reader.readAsDataURL(uploadInput.files[0]);
         } else {
-            // No new image uploaded, just save username/bio
-            Storage.updateUser(profileUser);
-            Storage.setCurrentUser(profileUser);
+            let users = Storage.getUsers();
+
+            users = users.map(u => {
+                if (u.id === profileUser.id) {
+                    return profileUser; // keep full object
+                }
+                return u;
+            });
+
+            Storage.saveUsers(users);
+
+            const currentUser = Storage.getCurrentUser();
+
+            if (currentUser && currentUser.id === profileUser.id) {
+                localStorage.setItem("currentUser", JSON.stringify(profileUser));
+            }
 
             document.getElementById("editProfileModal").style.display = "none";
             loadProfile();
@@ -222,12 +255,6 @@ document.addEventListener("DOMContentLoaded", () => {
     function closeEditProfile() {
         document.getElementById("editProfileModal").style.display = "none";
     }
-
-    // ===== BUTTON EVENTS =====
-    document.addEventListener("DOMContentLoaded", () => {
-        updateFollowButton();
-        updateFollowersCount();
-    });
     
     document.getElementById("editProfileBtn")
         ?.addEventListener("click", openEditProfile);
@@ -241,7 +268,64 @@ document.addEventListener("DOMContentLoaded", () => {
     // ===== RUN =====
     loadProfile();
 
-    // FIX: Wire up the follow button (setupFollowButton was defined but never called)
-    setupFollowButton();
+    document.getElementById("profileFollowersCount")
+        ?.addEventListener("click", () => openFollowModal("followers"));
+
+    document.getElementById("profileFollowingCount")
+        ?.addEventListener("click", () => openFollowModal("following"));
+
+    document.getElementById("closeFollowModal")
+        ?.addEventListener("click", () => {
+            document.getElementById("followModal").style.display = "none";
+        });
     
 });
+
+function openFollowModal(type) {
+    
+    const users = JSON.parse(localStorage.getItem("nexus_users")) || [];
+    const params = new URLSearchParams(window.location.search);
+    const profileId = params.get("id");
+    const currentUser = Storage.getCurrentUser();
+
+    const profileUser = profileId
+        ? Storage.getUserById(profileId)
+        : currentUser;
+
+    console.log("PROFILE USER:", profileUser);
+    console.log("FOLLOWING:", profileUser.following);
+    console.log("ALL USERS:", users);
+
+    const modal = document.getElementById("followModal");
+    const list = document.getElementById("followModalList");
+    const title = document.getElementById("followModalTitle");
+
+    list.innerHTML = "";
+
+    if (type === "following") {
+        title.textContent = "Following";
+
+        (profileUser.following || []).forEach(id => {
+            const user = users.find(u => String(u.id) === String(id));
+            if (user) {
+                const li = document.createElement("li");
+                li.textContent = user.username;
+                list.appendChild(li);
+            }
+        });
+    }
+
+    if (type === "followers") {
+        title.textContent = "Followers";
+
+        users.forEach(user => {
+            if (user.following?.map(String).includes(String(profileUser.id))) {
+                const li = document.createElement("li");
+                li.textContent = user.username;
+                list.appendChild(li);
+            }
+        });
+    }
+
+    modal.style.display = "flex";
+}

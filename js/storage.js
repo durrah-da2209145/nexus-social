@@ -34,7 +34,7 @@ users = users.map(user => ({
 localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
 // User operations
 function getUsers() {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS)) || [];
+    return JSON.parse(localStorage.getItem("nexus_users")) || [];
 }
 
 function saveUsers(users) {
