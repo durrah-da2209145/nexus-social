@@ -96,6 +96,25 @@ export async function GET() {
       };
     });
 
+    //added later by Student 4
+    const allPosts = await prisma.post.findMany();
+    const words = {};
+
+allPosts.forEach(p => {
+  p.content.split(/\s+/).forEach(w => {
+    const word = w.toLowerCase();
+    words[word] = (words[word] || 0) + 1;
+  });
+});
+const engagementScore = await prisma.post.aggregate({
+  _count: {
+    id: true,
+  },
+});
+
+const mostUsedWord = Object.entries(words)
+  .sort((a, b) => b[1] - a[1])[0];
+
     // Sort top users by engagement
     const topEngagement = engagement.sort((a, b) => b.engagement - a.engagement).slice(0, 5);
 

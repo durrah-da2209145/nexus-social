@@ -20,45 +20,88 @@ document.addEventListener('DOMContentLoaded', function () {
         setupCreatePost();
     }
     else if (currentPage === 'post.html') {
-        loadSinglePost();  // FIX: this now correctly calls the function below
+        loadSinglePost();  // FIX: now uses API instead of localStorage
     }
 });
 
-function loadFeed() {
+/**
+ * LOAD FEED
+ * FIX: Now fetching posts from API instead of localStorage
+ */
+// async function loadFeed() {
+//     const container = document.getElementById("postsContainer");
+//     if (!container) return;
+
+//     try {
+//         const res = await fetch('/api/posts');
+//         const posts = await res.json(); // phase 2 fix 
+
+//         container.innerHTML = posts.map(post => {
+//             const authorId = post.author?.id;
+//             const username = post.author?.username || 'Unknown';
+//             const likes = post._count?.likedBy || 0;
+
+//             return `
+//         <div class="post">
+//             <h4>
+//             <a href="profile.html?id=${authorId}" class="username-link">
+//                 ${username}
+//             </a>
+//             </h4>
+//             <p>${post.content}</p>
+//             <small>${new Date(post.createdAt).toLocaleString()}</small>
+        
+//             <button 
+//                 data-post-id="${post.id}" 
+//                 onclick="toggleLike('${post.id}')">
+//                 ❤️ ${likes}
+//             </button>
+
+//             <a href="post.html?id=${post.id}">View</a>
+//         </div>
+//     `;
+//         }).join('');
+
+//         loadSidebarData();
+
+//     } catch (err) {
+//         console.error("Error loading feed:", err);
+//     } }
+async function loadFeed() {
     const container = document.getElementById("postsContainer");
     if (!container) return;
 
-    const posts = JSON.parse(localStorage.getItem('nexus_posts')) || [];
+    try {
+        const res = await fetch('/api/posts');
+        const posts = await res.json();
 
-    container.innerHTML = posts.map(post => {
-        const authorId = post.userId || post.authorId;
-        const username = post.username || 'Unknown';
-        const likes = Array.isArray(post.likes) ? post.likes.length : 0;
+        container.innerHTML = posts.map(post => {
+            const username = post.author?.username || "Unknown";
+            const likes = post._count?.likes || 0;
 
-        return `
-        <div class="post">
-            <h4>
-            <a href="profile.html?id=${authorId}" class="username-link">
-                ${username}
-            </a>
-            </h4>
-            <p>${post.content}</p>
-            <small>${new Date(post.createdAt).toLocaleString()}</small>
-        
-            <button 
-                data-post-id="${post.id}" 
-                onclick="Interactions.toggleLike('${post.id}')">
-                ❤️ ${likes}
-            </button>
+            return `
+                <div class="post">
+                    <h4>${username}</h4>
+                    <p>${post.content}</p>
+                    <small>${new Date(post.createdAt).toLocaleString()}</small>
 
-            <a href="post.html?id=${post.id}">View</a>
-        </div>
-    `;
-    }).join('');
+                    <button onclick="toggleLike('${post.id}')">
+                        ❤️ ${likes}
+                    </button>
 
-    loadSidebarData();
+                    <a href="post.html?id=${post.id}">View</a>
+                </div>
+            `;
+        }).join('');
+
+    } catch (err) {
+        console.error("Feed error:", err);
+    }
 }
 
+/**
+ * KEEP: Hashtag logic (allowed as UI feature)
+ */
 function getTrendingHashtags(posts) {
     const hashtagCounts = {};
     const regex = /#(\w+)/g;
@@ -78,14 +121,17 @@ function getTrendingHashtags(posts) {
     return sortedHashtags.length ? sortedHashtags.slice(0, 4) : ['#Nexus', '#Social', '#Updates', '#Connect'];
 }
 
+/**
+ * Sidebar (still uses Storage for users - acceptable)
+ */
 function loadSidebarData() {
     const currentUser = Storage.getCurrentUser() || {};
     const users = Storage.getUsers();
-    const posts = Storage.getPosts();
+    const posts = []; // FIX: no longer using localStorage posts
+
     const otherUsers = users.filter(user => user.id !== currentUser.id);
 
     const followingCount = currentUser.following?.length ?? otherUsers.length;
-    const followersCount = currentUser.followers?.length ?? 0;
     const onlineCount = otherUsers.length;
 
     const sidebarSummary = document.getElementById('sidebarSummary');
@@ -105,35 +151,19 @@ function loadSidebarData() {
         const hashtags = getTrendingHashtags(posts);
         trendingList.innerHTML = hashtags.map(tag => `<li>${tag}</li>`).join('');
     }
-
-    const onlineList = document.getElementById('onlineList');
-    if (onlineList) {
-        onlineList.innerHTML = otherUsers.slice(0, 4).map(user => `
-            <li><span class="online-dot"></span>${user.username}</li>
-        `).join('') || '<li>No users online</li>';
-    }
-
-    const suggestionsList = document.getElementById('suggestionsList');
-    if (suggestionsList) {
-        suggestionsList.innerHTML = otherUsers.slice(0, 3).map(user => `
-            <li class="suggest-item">
-                <div>
-                    <strong>${user.username}</strong>
-                    <small>@${user.username.toLowerCase()}</small>
-                </div>
-                <button class="btn btn-secondary" type="button">Follow</button>
-            </li>
-        `).join('') || '<li>No suggestions available</li>';
-    }
 }
 
+/**
+ * CREATE POST
+ * FIX: replaced localStorage with API call
+ */
 function setupCreatePost() {
     const form = document.getElementById('createPostForm');
     const textarea = document.getElementById('postContent');
 
     if (!form || !textarea) return;
 
-    form.addEventListener('submit', function (e) {
+    form.addEventListener('submit', async function (e) {
         e.preventDefault();
 
         const content = textarea.value.trim();
@@ -142,55 +172,48 @@ function setupCreatePost() {
         const user = Storage.getCurrentUser();
         if (!user) return;
 
-        let posts = JSON.parse(localStorage.getItem('nexus_posts')) || [];
-
-        posts.push({
-            id: Date.now().toString(),
-            userId: user.id,
-            username: user.username,
-            content: content,
-            createdAt: Date.now()
+        await fetch('/api/posts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                authorId: user.id,
+                content
+            })
         });
-
-        localStorage.setItem('nexus_posts', JSON.stringify(posts));
 
         textarea.value = "";
         loadFeed();
     });
 }
 
-// FIX: Renamed from loadingSinglePost (typo) to loadSinglePost, and wired up post rendering
-function loadSinglePost() {
+/**
+ * SINGLE POST VIEW
+ * FIX: now uses API instead of localStorage
+ */
+async function loadSinglePost() {
     const container = document.getElementById('singlePostContainer');
-    const commentsSection = document.getElementById('commentsSection');
-    const noPost = document.getElementById('noPostMessage');
-
     if (!container) return;
 
     const params = new URLSearchParams(window.location.search);
     const postId = params.get('id');
 
-    const posts = JSON.parse(localStorage.getItem('nexus_posts')) || [];
-    const post = posts.find(p => p.id === postId);
+    try {
+        const res = await fetch(`/api/posts/${postId}`);
+        const post = await res.json();
 
-    // No post found
-    if (!post) {
-        container.innerHTML = '';
-        if (noPost) noPost.style.display = 'block';
-        if (commentsSection) commentsSection.style.display = 'none';
-        return;
-    }
+        if (!post) {
+            container.innerHTML = "<p>Post not found</p>";
+            return;
+        }
 
-    // Show the post itself
-    if (noPost) noPost.style.display = 'none';
-    if (commentsSection) commentsSection.style.display = 'block';
+        const currentUser = Storage.getCurrentUser();
+        const authorId = post.author?.id;
+        const username = post.author?.username || 'Unknown';
+        const likes = post._count?.likedBy || 0;
 
-    const currentUser = Storage.getCurrentUser();
-    const authorId = post.userId || post.authorId;
-    const username = post.username || 'Unknown';
-    const showDelete = currentUser && currentUser.id === authorId;
+        const showDelete = currentUser && currentUser.id === authorId;
 
-    container.innerHTML = `
+        container.innerHTML = `
         <div class="post single-post">
             <h4>
                 <a href="profile.html?id=${authorId}" class="username-link">
@@ -200,72 +223,59 @@ function loadSinglePost() {
             <p>${post.content}</p>
             <small>${new Date(post.createdAt).toLocaleString()}</small>
             <div class="post-actions">
-                <button
-                    data-post-id="${post.id}"
-                    onclick="Interactions.toggleLike('${post.id}')">
-                    ❤️ ${post.likes ? post.likes.length : 0}
+                <button onclick="toggleLike('${post.id}')">
+                    ❤️ ${likes}
                 </button>
                 ${showDelete ? `<button onclick="deletePost('${post.id}')">Delete</button>` : ''}
             </div>
         </div>
     `;
+
+    } catch (err) {
+        console.error("Error loading post:", err);
+    }
 }
 
-function setupCreatePost() {
-    const form = document.getElementById('createPostForm');
-    const textarea = document.getElementById('postContent');
+// /**
+//  * LIKE POST
+//  * FIX: now uses API instead of localStorage
+//  */
+// async function toggleLike(postId) {
+//     const user = Storage.getCurrentUser();
+//     if (!user) return;
 
-    if (!form || !textarea) return;
+//     await fetch(`/api/posts/${postId}/like`, {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify({ userId: user.id })
+//     });
 
-    form.addEventListener('submit', function (e) {
-        e.preventDefault();
+//     loadFeed();
+//     loadSinglePost();
+// }
 
-        const content = textarea.value.trim();
-        if (!content) return;
+async function toggleLike(postId) {
+    const user = Storage.getCurrentUser();
+    if (!user) return;
 
-        const user = Storage.getCurrentUser();
-        if (!user) return;
-
-        let posts = JSON.parse(localStorage.getItem('nexus_posts')) || [];
-
-        posts.push({
-            id: Date.now().toString(),
-            userId: user.id,
-            username: user.username,
-            content: content,
-            createdAt: Date.now()
-        });
-
-        localStorage.setItem('nexus_posts', JSON.stringify(posts));
-
-        textarea.value = "";
-        loadFeed();
+    await fetch(`/api/posts/${postId}/like`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id })
     });
+
+    loadFeed();
+    if (typeof loadSinglePost === "function") loadSinglePost();
 }
 
-// Convert a post object to HTML
-function postToHTML(post) {
-    const currentUser = Storage.getCurrentUser();
-    const authorId = post.userId || post.authorId;
-    const username = post.username || 'Unknown';
-    const showDelete = currentUser && currentUser.id === authorId;
-    return `
-        <div class="post" id="post-${post.id}">
-            <h4>${username}</h4>
-            <p>${post.content}</p>
-            <div class="post-actions">
-                ${showDelete ? `<button onclick="deletePost('${post.id}')">Delete</button>` : ''}
-                <a href="post.html?id=${post.id}">View</a>
-            </div>
-        </div>
-    `;
-}
-
-function deletePost(postId) {
-    // MEMBER 2: Delete post
-    let posts = JSON.parse(localStorage.getItem('nexus_posts')) || [];
-    posts = posts.filter(p => p.id !== postId);
-    localStorage.setItem('nexus_posts', JSON.stringify(posts));
+/**
+ * DELETE POST
+ * FIX: now uses API instead of localStorage
+ */
+async function deletePost(postId) {
+    await fetch(`/api/posts/${postId}`, {
+        method: 'DELETE'
+    });
 
     if (window.location.pathname.includes('feed.html')) {
         loadFeed();

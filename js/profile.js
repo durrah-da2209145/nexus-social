@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
     }
 
-    // ===== GET PROFILE USER =====
+    // ===== GET PROFILE USER ===
     const params = new URLSearchParams(window.location.search);
     const profileId = params.get("id");
 
@@ -18,7 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!profileUser) return;
 
-    // ===== LOAD PROFILE =====
+    // ===== LOAD PROFILE ==
     function loadProfile() {
 
         document.getElementById("profileUsername").textContent = profileUser.username;
@@ -38,9 +38,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         // Posts
-        const posts = JSON.parse(localStorage.getItem("nexus_posts")) || [];
-        const userPosts = posts.filter(p => (p.userId == profileUser.id || p.authorId == profileUser.id));
-
+       const res = await fetch(`/api/posts?userId=${profileUser.id}`);
+       const userPosts = await res.json();
         document.getElementById("profilePostsCount").textContent = userPosts.length;
 
         // FIX: Populate followers/following counts (elements exist in HTML but were never filled)
@@ -101,7 +100,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         currentUser.following.splice(index, 1);
                     }
 
-                    // 🔥 SAVE PROPERLY
+                    //  SAVE PROPERLY
                     users = users.map(u => {
                         if (String(u.id) === String(currentUser.id)) {
                             return currentUser;
@@ -125,7 +124,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // ===== OPEN MODAL =====
+    //  OPEN MODAL 
     function openEditProfile() {
         document.getElementById("editUsername").value = profileUser.username;
         document.getElementById("editBio").value = profileUser.bio || "";
@@ -133,7 +132,7 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("editProfileModal").style.display = "flex";
     }
 
-  // ===== SAVE EDIT =====
+  // SAVE EDIT 
     function saveProfileEdit(e) {
         e.preventDefault(); // prevent form submission reload
 
@@ -251,7 +250,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // ===== CLOSE MODAL =====
+    //  CLOSE MODAL =
     function closeEditProfile() {
         document.getElementById("editProfileModal").style.display = "none";
     }
@@ -265,7 +264,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("closeProfileBtn")
         ?.addEventListener("click", closeEditProfile);
 
-    // ===== RUN =====
+    // RUN 
     loadProfile();
 
     document.getElementById("profileFollowersCount")
