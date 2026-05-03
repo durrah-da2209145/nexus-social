@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 10, "column": 0}, "map": {"version":3,"sources":["file:///D:/S2025/github/nexus-social/app/page.js"],"sourcesContent":["export default function Home() {\n  return (\n    <div style={{ padding: \"20px\", fontFamily: \"Arial\" }}>\n      <h1>Nexus Social</h1>\n      <p>Server is running successfully.</p>\n\n      <a href=\"/html/feed.html\">Go to Feed</a>\n    </div>\n  );\n} //////"],"names":["Home","style","padding","fontFamily","href"],"mappings":";;;;;;AAAe,SAASA;IACtB,qBACE,iQAAC;QAAIC,OAAO;YAAEC,SAAS;YAAQC,YAAY;QAAQ;;0BACjD,iQAAC;0BAAG;;;;;;0BACJ,iQAAC;0BAAE;;;;;;0BAEH,iQAAC;gBAAEC,MAAK;0BAAkB;;;;;;;;;;;;AAGhC,EAAE,MAAM"}}]
+}

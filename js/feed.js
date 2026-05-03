@@ -3,14 +3,17 @@
  */
 
 document.addEventListener('DOMContentLoaded', function () {
-    const currentPage = window.location.pathname.split('/').pop();
+    // This check is more reliable for subfolders
+    const path = window.location.pathname;
 
-    if (currentPage === 'feed.html') {
+    if (path.includes('feed.html')) {
+        console.log("Initializing Feed...");
         loadFeed();
         loadSidebarData();
         setupCreatePost();
     }
-    else if (currentPage === 'post.html') {
+    else if (path.includes('post.html')) {
+        console.log("Initializing Single Post...");
         loadSinglePost();
         setupCommentForm();
     }
