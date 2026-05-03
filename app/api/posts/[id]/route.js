@@ -1,4 +1,7 @@
-import { prisma } from "@/lib/prisma";
+
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
 
 // GET single post
 export async function GET(req, { params }) {
