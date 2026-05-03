@@ -16,7 +16,50 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
-function loadFeed() {
+/**
+ * LOAD FEED
+ * FIX: Now fetching posts from API instead of localStorage
+ */
+// async function loadFeed() {
+//     const container = document.getElementById("postsContainer");
+//     if (!container) return;
+
+//     try {
+//         const res = await fetch('/api/posts');
+//         const posts = await res.json(); // phase 2 fix 
+
+//         container.innerHTML = posts.map(post => {
+//             const authorId = post.author?.id;
+//             const username = post.author?.username || 'Unknown';
+//             const likes = post._count?.likedBy || 0;
+
+//             return `
+//         <div class="post">
+//             <h4>
+//             <a href="profile.html?id=${authorId}" class="username-link">
+//                 ${username}
+//             </a>
+//             </h4>
+//             <p>${post.content}</p>
+//             <small>${new Date(post.createdAt).toLocaleString()}</small>
+        
+//             <button 
+//                 data-post-id="${post.id}" 
+//                 onclick="toggleLike('${post.id}')">
+//                 ❤️ ${likes}
+//             </button>
+
+//             <a href="post.html?id=${post.id}">View</a>
+//         </div>
+//     `;
+//         }).join('');
+
+//         loadSidebarData();
+
+//     } catch (err) {
+//         console.error("Error loading feed:", err);
+//     } }
+async function loadFeed() {
     const container = document.getElementById("postsContainer");
     if (!container) return;
 
@@ -369,6 +412,9 @@ function toggleLike(postId) {
     }
 }
 
+/**
+ * Sidebar (still uses Storage for users - acceptable)
+ */
 function loadSidebarData() {
     const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {};
     const users = JSON.parse(localStorage.getItem('nexus_users')) || [];

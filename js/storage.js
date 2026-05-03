@@ -127,40 +127,45 @@ function updateUser(updatedUser) {
 
     saveUsers(users);
 }
-// POSTS OPERATIONS
-function getPosts() {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.POSTS)) || [];
-}
+// // POSTS OPERATIONS
+// function getPosts() {
+//     return JSON.parse(localStorage.getItem(STORAGE_KEYS.POSTS)) || [];
+// }
 
-function savePosts(posts) {
-    localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(posts));
-}
+// function savePosts(posts) {
+//     localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(posts));
+// }
 
-function createPost(postData) {
-    const posts = getPosts();
+// function createPost(postData) {
+//     const posts = getPosts();
     
-    const newPost = {
-        id: Date.now().toString(),
-        content: postData.content,
-        userId: postData.userId ?? postData.authorId,
-        authorId: postData.authorId ?? postData.userId,
-        username: postData.username,
-        likes: postData.likes || [],
-        comments: postData.comments || [],
-        createdAt: new Date().toISOString()
-    };
+//     const newPost = {
+//         id: Date.now().toString(),
+//         content: postData.content,
+//         userId: postData.userId ?? postData.authorId,
+//         authorId: postData.authorId ?? postData.userId,
+//         username: postData.username,
+//         likes: postData.likes || [],
+//         comments: postData.comments || [],
+//         createdAt: new Date().toISOString()
+//     };
     
-    posts.push(newPost);
-    savePosts(posts);
+//     posts.push(newPost);
+//     savePosts(posts);
     
-    return newPost;
-}
+//     return newPost;
+// }
 
-// Optional: get posts by user
-function getPostsByUser(userId) {
-    const posts = getPosts();
-    return posts.filter(p => (p.userId === userId || p.authorId === userId));
-}
+// // Optional: get posts by user
+// function getPostsByUser(userId) {
+//     const posts = getPosts();
+//     return posts.filter(p => (p.userId === userId || p.authorId === userId));
+// }
+
+
+
+
+
 ///
 // Export
 window.Storage = {
@@ -173,8 +178,8 @@ window.Storage = {
     logout,
     getUserById,     // added by memeber 4
     updateUser,       // added ....
-    getPosts,         // added ...
-    savePosts,        // added ...
-    createPost,       // added ...
-    getPostsByUser
+    // getPosts,         // added ...
+    // savePosts,        // added ...
+    // createPost,       // added ...
+    // getPostsByUser
 };

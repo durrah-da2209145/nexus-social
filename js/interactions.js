@@ -30,7 +30,7 @@ function saveUsers(users) {
 
 //Likes
 
-function toggleLike(postId) {
+function toggleLike(postId) { //dupped 
     const user = Storage.getCurrentUser();
     if (!user) return;
 
@@ -71,7 +71,7 @@ function setupComments() {
     btn.addEventListener('click', addComment);
 }
 
-function addComment() {
+async function addComment() {
     const input = document.getElementById('commentInput');
     const text = input.value.trim();
 
@@ -83,22 +83,21 @@ function addComment() {
     const params = new URLSearchParams(window.location.search);
     const postId = params.get('id');
 
-    let posts = JSON.parse(localStorage.getItem('nexus_posts')) || [];
-    const post = posts.find(p => p.id === postId);
+    if (!postId) return;
 
-    if (!post) return;
-
-    if (!post.comments) post.comments = [];
-
-    post.comments.push({
-        postId,
-        userId: user.id,
-        username: user.username,
-        content: text,
-        createdAt: Date.now()
+    const res = await fetch(`/api/posts/${postId}/comment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            authorId: user.id,
+            text
+        })
     });
 
-    localStorage.setItem('nexus_posts', JSON.stringify(posts));
+    if (!res.ok) {
+        console.error("Failed to add comment");
+        return;
+    }
 
     input.value = "";
     loadComments();
@@ -114,7 +113,9 @@ function loadComments() {
     const params = new URLSearchParams(window.location.search);
     const postId = params.get('id');
 
-    const posts = JSON.parse(localStorage.getItem('nexus_posts')) || [];
+    const res = await fetch(`/api/posts/${postId}`);
+const post = await res.json();
+const comments = post.comments || [];
     const users = JSON.parse(localStorage.getItem('nexus_users')) || [];
 
     const post = posts.find(p => p.id === postId);
