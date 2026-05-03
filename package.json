@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "seed": "node prisma/seed.js"
+ 
+  "dev": "next dev",
+  "build": "next build",
+  "start": "next start"
+
   },
   "dependencies": {
     "@libsql/client": "latest",
