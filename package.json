@@ -3,11 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
- 
-  "dev": "next dev",
-  "build": "next build",
-  "start": "next start"
-
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
   },
   "dependencies": {
     "@libsql/client": "latest",
@@ -15,7 +13,10 @@
     "@prisma/client": "latest",
     "@prisma/client-runtime-utils": "latest",
     "bcryptjs": "^3.0.3",
-    "dotenv": "latest"
+    "dotenv": "latest",
+    "next": "^16.2.4",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5"
   },
   "devDependencies": {
     "prisma": "latest"
