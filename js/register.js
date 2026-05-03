@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', function() {
         emailInput.addEventListener('input', debounce(function() {
             validateEmail();
             validateForm();
-        }, 500)); // Longer debounce for email check
+        }, 500));
         emailInput.addEventListener('blur', validateEmail);
     }
     
@@ -183,10 +183,10 @@ function updateCondition(elementId, isMet) {
     
     if (isMet) {
         element.classList.add('met');
-        checkSpan.classList.add('met');
+        if (checkSpan) checkSpan.classList.add('met');
     } else {
         element.classList.remove('met');
-        checkSpan.classList.remove('met');
+        if (checkSpan) checkSpan.classList.remove('met');
     }
 }
 
@@ -215,6 +215,7 @@ function handleRegister(e) {
     
     // Double-check all validations
     if (!validateUsername() || !validateEmail() || !checkPasswordConditions() || !validatePasswordMatch()) {
+        alert('Please fix all validation errors before submitting.');
         return;
     }
     
@@ -224,23 +225,52 @@ function handleRegister(e) {
     }
     
     try {
-        const newUser = Storage.createUser({
-            username,
-            email,
-            password
-        });
+        // DIRECT creation - no Storage object
+        const users = getUsers();
         
-        Storage.setCurrentUser(newUser);
+        // Double check for duplicates
+        if (users.some(u => u.email === email)) {
+            showFieldError('email', 'Email already registered');
+            return;
+        }
+        
+        if (users.some(u => u.username === username)) {
+            showFieldError('username', 'Username already taken');
+            return;
+        }
+        
+        // Create new user object
+        const newUser = {
+            id: Date.now(),
+            username: username,
+            email: email,
+            password: btoa(password), // Store in base64
+            bio: '',
+            profilePic: null,
+            following: [],
+            followers: [],
+            createdAt: new Date().toISOString()
+        };
+        
+        // Save to users array
+        users.push(newUser);
+        localStorage.setItem('nexus_users', JSON.stringify(users));
+        
+        // Create user object without password for current session
+        const { password: _, ...userWithoutPassword } = newUser;
+        
+        // Save as current user
+        localStorage.setItem('currentUser', JSON.stringify(userWithoutPassword));
+        
+        console.log('User registered successfully:', username);
+        console.log('Saved to localStorage:', localStorage.getItem('currentUser'));
+        
+        // Redirect to feed
         window.location.href = 'feed.html';
         
     } catch (error) {
-        if (error.message.includes('Email')) {
-            showFieldError('email', error.message);
-        } else if (error.message.includes('Username')) {
-            showFieldError('username', error.message);
-        } else {
-            alert(error.message);
-        }
+        console.error('Registration error:', error);
+        alert('Registration failed: ' + error.message);
     }
 }
 
@@ -271,7 +301,7 @@ function hideFieldError(fieldId) {
     }
 }
 
-// Helper function to get users (since we need it for validation)
+// Helper function to get users
 function getUsers() {
     return JSON.parse(localStorage.getItem('nexus_users')) || [];
 }

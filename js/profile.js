@@ -18,16 +18,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!profileUser) return;
 
-    // Helper function to get current profile user
+    // ===== GET PROFILE USER - Helper function =====
     function getProfileUser() {
         const params = new URLSearchParams(window.location.search);
         const profileId = params.get("id");
-        return profileId ? Storage.getUserById(profileId) : Storage.getCurrentUser();
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        
+        if (profileId) {
+            const users = JSON.parse(localStorage.getItem('nexus_users')) || [];
+            return users.find(u => String(u.id) === String(profileId));
+        }
+        return currentUser;
     }
 
-    // ===== UPDATE FOLLOW BUTTON STATE =====
+    // ===== UPDATE FOLLOW BUTTON STATE - FIXED =====
     function updateFollowButton() {
-        const currentUser = Storage.getCurrentUser();
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
         const profileUser = getProfileUser();
         const btn = document.getElementById("followBtn");
 
@@ -40,31 +46,81 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         btn.style.display = "block";
-        const isFollowing = currentUser.following?.includes(profileUser.id);
+        
+        // Initialize following array if it doesn't exist
+        if (!currentUser.following) {
+            currentUser.following = [];
+        }
+        
+        const isFollowing = currentUser.following.includes(profileUser.id);
         btn.textContent = isFollowing ? "Unfollow" : "Follow";
+        
+        // Update button style based on state
+        if (isFollowing) {
+            btn.style.background = "linear-gradient(135deg, #dc3545, #c82333)";
+            btn.style.border = "none";
+        } else {
+            btn.style.background = "linear-gradient(135deg, #007bff, #0056b3)";
+            btn.style.border = "none";
+        }
     }
 
-    // ===== UPDATE FOLLOWERS COUNT =====
+    // ===== UPDATE FOLLOWERS COUNT - FIXED =====
     function updateFollowersCount() {
-        const users = Storage.getUsers();
+        const users = JSON.parse(localStorage.getItem('nexus_users')) || [];
         const profileUser = getProfileUser();
-
-        let count = 0;
+        
+        if (!profileUser) return;
+        
+        // Count how many users have this profile user in their following array
+        let followersCount = 0;
         users.forEach(user => {
-            if (user.following?.includes(profileUser.id)) {
-                count++;
+            if (user.following && user.following.includes(profileUser.id)) {
+                followersCount++;
             }
         });
-
-        document.getElementById("profileFollowersCount").textContent = count;
+        
+        // Also check if the profile user has followers array (backward compatibility)
+        if (profileUser.followers) {
+            followersCount = profileUser.followers.length;
+        }
+        
+        const followersElement = document.getElementById("profileFollowersCount");
+        if (followersElement) {
+            followersElement.textContent = followersCount;
+        }
+        
+        return followersCount;
     }
 
-    // ===== HANDLE FOLLOW/UNFOLLOW =====
+    // ===== UPDATE FOLLOWING COUNT - FIXED =====
+    function updateFollowingCount() {
+        const profileUser = getProfileUser();
+        
+        if (!profileUser) return;
+        
+        let followingCount = 0;
+        if (profileUser.following) {
+            followingCount = profileUser.following.length;
+        }
+        
+        const followingElement = document.getElementById("profileFollowingCount");
+        if (followingElement) {
+            followingElement.textContent = followingCount;
+        }
+        
+        return followingCount;
+    }
+
+    // ===== HANDLE FOLLOW/UNFOLLOW - FIXED =====
     function handleFollow() {
-        const currentUser = Storage.getCurrentUser();
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
         const profileUser = getProfileUser();
 
-        if (!currentUser || !profileUser) return;
+        if (!currentUser || !profileUser) {
+            console.error('Missing user data');
+            return;
+        }
 
         // Prevent self-follow
         if (currentUser.id === profileUser.id) {
@@ -72,25 +128,66 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        if (!currentUser.following) currentUser.following = [];
-
-        const isFollowing = currentUser.following.includes(profileUser.id);
-
-        if (isFollowing) {
-            // UNFOLLOW
-            currentUser.following = currentUser.following.filter(id => id !== profileUser.id);
-        } else {
-            // FOLLOW
-            currentUser.following.push(profileUser.id);
+        // Initialize following array if it doesn't exist
+        if (!currentUser.following) {
+            currentUser.following = [];
         }
 
-        // Save updated user
-        Storage.updateUser(currentUser);
+        // Check if already following
+        const isFollowing = currentUser.following.includes(profileUser.id);
         
+        let users = JSON.parse(localStorage.getItem('nexus_users')) || [];
+
+        if (isFollowing) {
+            // UNFOLLOW - Remove from current user's following
+            currentUser.following = currentUser.following.filter(id => id !== profileUser.id);
+            
+            // Also remove from profile user's followers (if exists)
+            const profileUserIndex = users.findIndex(u => u.id === profileUser.id);
+            if (profileUserIndex !== -1 && users[profileUserIndex].followers) {
+                users[profileUserIndex].followers = users[profileUserIndex].followers.filter(id => id !== currentUser.id);
+            }
+            
+            console.log(`Unfollowed user: ${profileUser.username}`);
+        } else {
+            // FOLLOW - Add to current user's following
+            currentUser.following.push(profileUser.id);
+            
+            // Also add to profile user's followers (if exists, or create it)
+            const profileUserIndex = users.findIndex(u => u.id === profileUser.id);
+            if (profileUserIndex !== -1) {
+                if (!users[profileUserIndex].followers) {
+                    users[profileUserIndex].followers = [];
+                }
+                if (!users[profileUserIndex].followers.includes(currentUser.id)) {
+                    users[profileUserIndex].followers.push(currentUser.id);
+                }
+            }
+            
+            console.log(`Followed user: ${profileUser.username}`);
+        }
+
+        // Update current user in users array
+        const currentUserIndex = users.findIndex(u => u.id === currentUser.id);
+        if (currentUserIndex !== -1) {
+            users[currentUserIndex] = currentUser;
+        }
+
+        // Save everything back to localStorage
+        localStorage.setItem('nexus_users', JSON.stringify(users));
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+
         // Update UI
         updateFollowButton();
         updateFollowersCount();
+        updateFollowingCount();
+        
+        // Also update sidebar if needed
+        if (typeof loadSidebarData === 'function') {
+            loadSidebarData();
+        }
     }
+
 
     // ===== LOAD PROFILE =====
     function loadProfile() {

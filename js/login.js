@@ -74,14 +74,55 @@ function handleLogin(e) {
     
     if (hasError) return;
     
-    const user = Storage.validateUser(email, password);
+    // DIRECT access to localStorage - no Storage object
+    const user = validateUserDirect(email, password);
     
     if (user) {
-        Storage.setCurrentUser(user);
+        // DIRECT save to localStorage
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        console.log('User logged in successfully:', user.username);
+        console.log('Saved to localStorage:', localStorage.getItem('currentUser'));
+        
+        // Redirect to feed
         window.location.href = 'feed.html';
     } else {
         showFieldError('password', 'Invalid email or password');
     }
+}
+
+// Direct validation function without using Storage object
+function validateUserDirect(email, password) {
+    const users = JSON.parse(localStorage.getItem('nexus_users')) || [];
+    
+    console.log('Looking for user with email:', email);
+    console.log('Total users in system:', users.length);
+    
+    // Find user by email
+    const user = users.find(u => u.email === email);
+    
+    if (!user) {
+        console.log('User not found with email:', email);
+        return null;
+    }
+    
+    // Decode password (since it's stored in base64)
+    let decodedPassword = user.password;
+    try {
+        decodedPassword = atob(user.password);
+    } catch(e) {
+        // If not base64, use as is
+        decodedPassword = user.password;
+    }
+    
+    console.log('Password match:', decodedPassword === password);
+    
+    if (decodedPassword === password) {
+        // Return user without the password
+        const { password, ...userWithoutPassword } = user;
+        return userWithoutPassword;
+    }
+    
+    return null;
 }
 
 function isValidEmail(email) {
@@ -122,10 +163,17 @@ function handleForgotPassword(e) {
     const email = prompt('Enter your email address:');
     if (!email) return;
     
-    const user = Storage.findUserByEmail(email);
+    const users = JSON.parse(localStorage.getItem('nexus_users')) || [];
+    const user = users.find(u => u.email === email);
     
     if (user) {
-        alert(`Your password is: ${atob(user.password)}`);
+        let password = user.password;
+        try {
+            password = atob(user.password);
+        } catch(e) {
+            password = user.password;
+        }
+        alert(`Your password is: ${password}`);
     } else {
         alert('No account found with that email');
     }

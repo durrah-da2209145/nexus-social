@@ -20,13 +20,22 @@ function loadFeed() {
     const container = document.getElementById("postsContainer");
     if (!container) return;
 
-    // Get posts from storage
     let posts = JSON.parse(localStorage.getItem('nexus_posts')) || [];
     const users = JSON.parse(localStorage.getItem('nexus_users')) || [];
     
-    console.log('Loading feed. Posts found:', posts.length);
+    // Get current user directly from localStorage
+    const currentUserRaw = localStorage.getItem('currentUser');
+    let currentUser = null;
+    if (currentUserRaw && currentUserRaw !== 'null') {
+        try {
+            currentUser = JSON.parse(currentUserRaw);
+        } catch(e) {}
+    }
     
-    // Sort by newest first (higher createdAt = newer)
+    console.log('Loading feed. Posts found:', posts.length);
+    console.log('Current user:', currentUser?.username);
+    
+    // Sort by newest first
     posts.sort((a, b) => b.createdAt - a.createdAt);
 
     if (posts.length === 0) {
@@ -38,43 +47,26 @@ function loadFeed() {
     
     for (let i = 0; i < posts.length; i++) {
         const post = posts[i];
-        
-        // Get author ID (handle both formats)
         const authorId = post.userId || post.authorId;
         
-        // Get username - try multiple places
         let username = post.authorName || post.username;
-        
-        // If still no username, look it up from users array
         if (!username || username === 'Unknown') {
-            for (let j = 0; j < users.length; j++) {
-                if (String(users[j].id) === String(authorId)) {
-                    username = users[j].username;
-                    break;
-                }
-            }
+            const author = users.find(u => String(u.id) === String(authorId));
+            username = author ? author.username : 'User';
         }
-        
-        // Final fallback
-        if (!username) username = 'User';
         
         const likes = post.likes ? post.likes.length : 0;
         const comments = post.comments ? post.comments.length : 0;
-        
-        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
         const showDelete = currentUser && String(currentUser.id) === String(authorId);
         
-        // Format date
-        let dateStr = '';
+        let dateStr = 'Recently';
         if (post.createdAt) {
             const date = new Date(post.createdAt);
             dateStr = date.toLocaleString();
-        } else {
-            dateStr = 'Recently';
         }
         
         html += `
-        <div class="post" id="post-${post.id}" style="border:1px solid #ddd; margin-bottom:20px; padding:15px; border-radius:8px;">
+        <div class="post" id="post-${post.id}" style="border:1px solid #ddd; margin-bottom:20px; padding:15px; border-radius:8px; background:white;">
             <h4 style="margin:0 0 10px 0;">
                 <a href="profile.html?id=${authorId}" style="text-decoration:none; color:#333;">
                     ${escapeHtml(username)}
@@ -87,13 +79,13 @@ function loadFeed() {
                 <button 
                     data-post-id="${post.id}" 
                     onclick="toggleLike('${post.id}')"
-                    style="margin-right:10px; cursor:pointer;">
+                    style="margin-right:10px; cursor:pointer; padding:5px 10px;">
                     ❤️ ${likes}
                 </button>
 
-                <a href="post.html?id=${post.id}" style="margin-right:10px; text-decoration:none;">💬 ${comments}</a>
+                <a href="post.html?id=${post.id}" style="margin-right:10px; text-decoration:none; padding:5px 10px;">💬 ${comments}</a>
                 
-                ${showDelete ? `<button onclick="deletePost('${post.id}')" style="cursor:pointer; color:red;">🗑️ Delete</button>` : ''}
+                ${showDelete ? `<button onclick="deletePost('${post.id}')" style="cursor:pointer; padding:5px 10px; color:red;">🗑️ Delete</button>` : ''}
             </div>
         </div>
         `;
@@ -120,19 +112,37 @@ function setupCreatePost() {
             return;
         }
 
-        const user = JSON.parse(localStorage.getItem('currentUser'));
-        if (!user) {
+        // DIRECT access to localStorage - NO Storage object
+        const userRaw = localStorage.getItem('currentUser');
+        console.log('Raw user from localStorage:', userRaw);
+        
+        if (!userRaw || userRaw === 'null' || userRaw === 'undefined') {
             alert('You must be logged in to post.');
             window.location.href = 'login.html';
             return;
         }
+        
+        let user;
+        try {
+            user = JSON.parse(userRaw);
+        } catch (e) {
+            console.error('Failed to parse user:', e);
+            alert('Session error. Please log in again.');
+            window.location.href = 'login.html';
+            return;
+        }
+        
+        if (!user || !user.id) {
+            alert('User data is invalid. Please log in again.');
+            localStorage.removeItem('currentUser');
+            window.location.href = 'login.html';
+            return;
+        }
 
-        // Get existing posts
+        console.log('Creating post for user:', user.username, 'ID:', user.id);
+
         let posts = JSON.parse(localStorage.getItem('nexus_posts')) || [];
         
-        console.log('Creating new post for user:', user.username);
-        
-        // Create new post object
         const newPost = {
             id: Date.now().toString(),
             userId: user.id,
@@ -145,22 +155,18 @@ function setupCreatePost() {
             comments: []
         };
 
-        // Add to beginning
         posts.unshift(newPost);
-        
-        // Save back to storage
         localStorage.setItem('nexus_posts', JSON.stringify(posts));
         
         console.log('Post saved. Total posts:', posts.length);
 
-        // Clear textarea
         if (textarea) textarea.value = "";
         
         // Reload feed
         loadFeed();
-        
-        // Also update sidebar counts
         loadSidebarData();
+        
+        alert('Post created successfully!');
     });
 }
 
