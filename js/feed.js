@@ -221,7 +221,7 @@ function loadSinglePost() {
     const postId = params.get('id');
 
     const posts = JSON.parse(localStorage.getItem('nexus_posts')) || [];
-    const post = posts.find(p => p.id === postId);
+    const post = posts.find(p => String(p.id) === String(postId));
     
     console.log('Loading single post:', postId, 'Found:', !!post);
 
@@ -265,12 +265,14 @@ function loadSinglePost() {
     loadComments(postId);
 }
 
+document.getElementById('commentsSection').style.display = 'block';
+
 function loadComments(postId) {
-    const commentsContainer = document.getElementById('commentsContainer');
+    const commentsContainer = document.getElementById('commentsList');
     if (!commentsContainer) return;
 
     const posts = JSON.parse(localStorage.getItem('nexus_posts')) || [];
-    const post = posts.find(p => p.id === postId);
+    const post = posts.find(p => String(p.id) === String(postId));
     
     if (!post || !post.comments || post.comments.length === 0) {
         commentsContainer.innerHTML = '<p>No comments yet. Be the first to comment!</p>';
@@ -294,7 +296,7 @@ function loadComments(postId) {
                 <strong><a href="profile.html?id=${comment.userId}">${escapeHtml(comment.userName)}</a></strong>
                 <p>${escapeHtml(comment.text)}</p>
                 <small>${dateStr}</small>
-                ${showDelete ? `<button onclick="deleteComment('${postId}', '${comment.id}')" style="display:block; margin-top:5px;">Delete</button>` : ''}
+                ${showDelete ? `<button class="action-btn delete-btn" onclick="deleteComment('${postId}', '${comment.id}')">🗑️ Delete</button>` : ''}
             </div>
         `;
     }
@@ -303,52 +305,45 @@ function loadComments(postId) {
 }
 
 function setupCommentForm() {
-    const commentForm = document.getElementById('commentForm');
-    if (!commentForm) return;
-    
-    commentForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
+    const btn = document.getElementById('submitComment');
+    if (!btn) return;
+
+    btn.addEventListener('click', function () {
         const commentInput = document.getElementById('commentInput');
-        const commentText = commentInput ? commentInput.value.trim() : '';
-        
+        const commentText = commentInput.value.trim();
+
         if (!commentText) {
             alert('Please enter a comment.');
             return;
         }
-        
+
         const params = new URLSearchParams(window.location.search);
         const postId = params.get('id');
-        
+
         const currentUser = JSON.parse(localStorage.getItem('currentUser'));
         if (!currentUser) {
-            alert('You must be logged in to comment.');
-            window.location.href = 'login.html';
+            alert('Login required');
             return;
         }
-        
+
         let posts = JSON.parse(localStorage.getItem('nexus_posts')) || [];
-        const postIndex = posts.findIndex(p => p.id === postId);
-        
-        if (postIndex === -1) {
-            alert('Post not found.');
-            return;
-        }
-        
+        const postIndex = posts.findIndex(p => String(p.id) === String(postId));
+
+        if (postIndex === -1) return;
+
         if (!posts[postIndex].comments) posts[postIndex].comments = [];
-        
-        const newComment = {
+
+        posts[postIndex].comments.push({
             id: Date.now().toString(),
             text: commentText,
             userId: currentUser.id,
             userName: currentUser.username,
             createdAt: Date.now()
-        };
-        
-        posts[postIndex].comments.push(newComment);
+        });
+
         localStorage.setItem('nexus_posts', JSON.stringify(posts));
-        
-        if (commentInput) commentInput.value = '';
+
+        commentInput.value = '';
         loadComments(postId);
     });
 }
@@ -384,29 +379,31 @@ function toggleLike(postId) {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     if (!currentUser) {
         alert('Please login to like posts');
+        window.location.href = 'index.html';
         return;
     }
     
     let posts = JSON.parse(localStorage.getItem('nexus_posts')) || [];
-    const postIndex = posts.findIndex(p => p.id === postId);
+    const postIndex = posts.findIndex(p => String(p.id) === String(postId));
     
     if (postIndex !== -1) {
         if (!posts[postIndex].likes) posts[postIndex].likes = [];
-        
-        const likeIndex = posts[postIndex].likes.indexOf(currentUser.id);
-        
+
+        const userId = String(currentUser.id);
+
+        const likeIndex = posts[postIndex].likes.findIndex(id => String(id) === userId);
+
         if (likeIndex === -1) {
-            posts[postIndex].likes.push(currentUser.id);
+            posts[postIndex].likes.push(userId);
         } else {
             posts[postIndex].likes.splice(likeIndex, 1);
         }
-        
+
         localStorage.setItem('nexus_posts', JSON.stringify(posts));
-        
-        // Reload the feed or post page
+
         if (window.location.pathname.includes('feed.html')) {
             loadFeed();
-        } else if (window.location.pathname.includes('post.html')) {
+        } else {
             loadSinglePost();
         }
     }
@@ -492,3 +489,7 @@ function escapeHtml(text) {
         return m;
     });
 }
+
+window.toggleLike = toggleLike;
+window.deletePost = deletePost;
+window.deleteComment = deleteComment;

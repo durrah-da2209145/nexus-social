@@ -1,138 +1,96 @@
+/**
+ * Nexus Social - Profile Page
+ */
+
 document.addEventListener("DOMContentLoaded", () => {
-
     // ===== GET CURRENT USER =====
-    const currentUser = Storage.getCurrentUser();
-
+    const currentUser = getCurrentUserSafe();
+    
     if (!currentUser) {
-        window.location.href = "login.html";
+        window.location.href = "index.html";
         return;
     }
 
-    // ===== GET PROFILE USER ===
+    // ===== LOAD PROFILE =====
+    loadProfile();
+    
+    // ===== SETUP EVENT LISTENERS =====
+    document.getElementById("editProfileBtn")?.addEventListener("click", openEditProfile);
+    document.getElementById("saveProfileBtn")?.addEventListener("click", saveProfileEdit);
+    document.getElementById("closeProfileBtn")?.addEventListener("click", closeEditProfile);
+    document.getElementById("profileFollowersCount")?.addEventListener("click", () => openFollowModal("followers"));
+    document.getElementById("profileFollowingCount")?.addEventListener("click", () => openFollowModal("following"));
+    document.getElementById("closeFollowModal")?.addEventListener("click", () => {
+        document.getElementById("followModal").style.display = "none";
+    });
+    
+    // Setup post creation
+    setupProfilePostCreation();
+});
+
+function getCurrentUserSafe() {
+    try {
+        const user = localStorage.getItem('currentUser');
+        if (!user || user === 'null' || user === 'undefined') return null;
+        return JSON.parse(user);
+    } catch(e) {
+        console.error('Error getting user:', e);
+        return null;
+    }
+}
+
+function getProfileUser() {
     const params = new URLSearchParams(window.location.search);
     const profileId = params.get("id");
+    const currentUser = getCurrentUserSafe();
+    
+    if (profileId) {
+        const users = JSON.parse(localStorage.getItem("nexus_users")) || [];
+        const profileUser = users.find(u => String(u.id) === String(profileId));
+        return profileUser || currentUser;
+    }
+    return currentUser;
+}
 
-    let profileUser = profileId
-        ? Storage.getUserById(profileId)
-        : currentUser;
-
+function loadProfile() {
+    const profileUser = getProfileUser();
+    const currentUser = getCurrentUserSafe();
+    
     if (!profileUser) return;
 
-    // Helper function to get current profile user
-    function getProfileUser() {
-        const params = new URLSearchParams(window.location.search);
-        const profileId = params.get("id");
-        return profileId ? Storage.getUserById(profileId) : Storage.getCurrentUser();
-    }
+    // Update profile info
+    const usernameEl = document.getElementById("profileUsername");
+    const bioEl = document.getElementById("profileBio");
+    const avatarEl = document.getElementById("profileAvatar");
+    
+    if (usernameEl) usernameEl.textContent = profileUser.username;
+    if (bioEl) bioEl.textContent = profileUser.bio || "This user hasn't added a bio yet.";
 
-    // ===== UPDATE FOLLOW BUTTON STATE =====
-    function updateFollowButton() {
-        const currentUser = Storage.getCurrentUser();
-        const profileUser = getProfileUser();
-        const btn = document.getElementById("followBtn");
-
-        if (!btn || !currentUser || !profileUser) return;
-
-        // Hide button if viewing your own profile
-        if (currentUser.id === profileUser.id) {
-            btn.style.display = "none";
-            return;
-        }
-
-        btn.style.display = "block";
-        const isFollowing = currentUser.following?.includes(profileUser.id);
-        btn.textContent = isFollowing ? "Unfollow" : "Follow";
-    }
-
-    // ===== UPDATE FOLLOWERS COUNT =====
-    function updateFollowersCount() {
-        const users = Storage.getUsers();
-        const profileUser = getProfileUser();
-
-        let count = 0;
-        users.forEach(user => {
-            if (user.following?.includes(profileUser.id)) {
-                count++;
-            }
-        });
-
-        document.getElementById("profileFollowersCount").textContent = count;
-    }
-
-    // ===== HANDLE FOLLOW/UNFOLLOW =====
-    function handleFollow() {
-        const currentUser = Storage.getCurrentUser();
-        const profileUser = getProfileUser();
-
-        if (!currentUser || !profileUser) return;
-
-        // Prevent self-follow
-        if (currentUser.id === profileUser.id) {
-            alert("You cannot follow yourself");
-            return;
-        }
-
-        if (!currentUser.following) currentUser.following = [];
-
-        const isFollowing = currentUser.following.includes(profileUser.id);
-
-        if (isFollowing) {
-            // UNFOLLOW
-            currentUser.following = currentUser.following.filter(id => id !== profileUser.id);
-        } else {
-            // FOLLOW
-            currentUser.following.push(profileUser.id);
-        }
-
-        // Save updated user
-        Storage.updateUser(currentUser);
-        
-        // Update UI
-        updateFollowButton();
-        updateFollowersCount();
-    }
-
-    // ===== LOAD PROFILE =====
-    function loadProfile() {
-
-        document.getElementById("profileUsername").textContent = profileUser.username;
-        document.getElementById("profileBio").textContent =
-            profileUser.bio || "This user hasn't added a bio yet.";
-
-        // Avatar
-        const avatar = document.getElementById("profileAvatar");
-
+    // Avatar
+    if (avatarEl) {
         if (profileUser.profilePic) {
-            avatar.style.backgroundImage = `url(${profileUser.profilePic})`;
-            avatar.style.backgroundSize = "cover";
-            avatar.textContent = "";
+            avatarEl.style.backgroundImage = `url(${profileUser.profilePic})`;
+            avatarEl.style.backgroundSize = "cover";
+            avatarEl.textContent = "";
         } else {
-            avatar.style.backgroundImage = "";
-            avatar.textContent = profileUser.username[0].toUpperCase();
+            avatarEl.style.backgroundImage = "";
+            avatarEl.textContent = profileUser.username[0].toUpperCase();
         }
+    }
 
-        // Posts
-       const res = await fetch(`/api/posts?userId=${profileUser.id}`);
-       const userPosts = await res.json();
-        document.getElementById("profilePostsCount").textContent = userPosts.length;
+    // Posts
+    const posts = JSON.parse(localStorage.getItem("nexus_posts")) || [];
+    const userPosts = posts.filter(p => (p.userId == profileUser.id || p.authorId == profileUser.id));
+    const postsCountEl = document.getElementById("profilePostsCount");
+    if (postsCountEl) postsCountEl.textContent = userPosts.length;
 
-        // FIX: Populate followers/following counts (elements exist in HTML but were never filled)
-        const allUsers = JSON.parse(localStorage.getItem("nexus_users")) || [];
-        const fullProfileUser = allUsers.find(u => u.id == profileUser.id);
-        const following = fullProfileUser?.following || [];
+    // Update followers count
+    updateFollowersCount();
+    updateFollowingCount();
 
-        let followersCount = 0;
-
-        allUsers.forEach(user => {
-            if (user.following?.includes(profileUser.id)) {
-                followersCount++;
-            }
-        });
-
-        document.getElementById("profileFollowersCount").textContent = followersCount;
-        document.getElementById("profileFollowingCount").textContent = following.length;
-
-        const container = document.getElementById("userPostsContainer");
+    // Display posts
+    const container = document.getElementById("userPostsContainer");
+    if (container) {
         container.innerHTML = "";
 
         if (userPosts.length === 0) {
@@ -140,265 +98,297 @@ document.addEventListener("DOMContentLoaded", () => {
         } else {
             userPosts.forEach(post => {
                 const date = new Date(post.createdAt);
-                const formattedDate = date.toLocaleString(); // e.g., "3/26/2026, 4:15 PM"
-
+                const formattedDate = date.toLocaleString();
                 const div = document.createElement("div");
-                div.className = "post";
+                div.className = "profile-post-card";
                 div.innerHTML = `
-                    <p>${post.content}</p>
-                 <small class="post-date">${formattedDate}</small>
-                    
+                    <p>${escapeHtml(post.content)}</p>
+                    <small class="post-date">${formattedDate}</small>
+                    ${currentUser && currentUser.id == profileUser.id ? `<button class="delete-post-btn" data-post-id="${post.id}">Delete Post</button>` : ''}
                 `;
                 container.appendChild(div);
             });
-        }
-
-        // Buttons show/hide
-        const editBtn = document.getElementById("editProfileBtn");
-
-        // FOLLOW BUTTON
-        const followBtn = document.getElementById("followBtn");
-
-        if (followBtn) {
-                followBtn.addEventListener("click", () => {
-                    let users = JSON.parse(localStorage.getItem("nexus_users")) || [];
-                    let currentUser = Storage.getCurrentUser();
-
-                    if (!currentUser.following) currentUser.following = [];
-
-                    const index = currentUser.following.indexOf(profileUser.id);
-
-                    if (index === -1) {
-                        currentUser.following.push(profileUser.id);
-                    } else {
-                        currentUser.following.splice(index, 1);
+            
+            // Delete post functionality
+            document.querySelectorAll('.delete-post-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const postId = btn.getAttribute('data-post-id');
+                    if (confirm('Delete this post?')) {
+                        deletePost(postId);
                     }
-
-                    //  SAVE PROPERLY
-                    users = users.map(u => {
-                        if (String(u.id) === String(currentUser.id)) {
-                            return currentUser;
-                        }
-                        return u;
-                    });
-
-                    localStorage.setItem("nexus_users", JSON.stringify(users));
-                    localStorage.setItem("currentUser", JSON.stringify(currentUser));
-
-                    loadProfile();
                 });
-            }
-
-        if (currentUser.id == profileUser.id) {
-            editBtn.style.display = "block";
-            followBtn.style.display = "none";
-        } else {
-            editBtn.style.display = "none";
-            followBtn.style.display = "block";
-        }
-    }
-
-    //  OPEN MODAL 
-    function openEditProfile() {
-        document.getElementById("editUsername").value = profileUser.username;
-        document.getElementById("editBio").value = profileUser.bio || "";
-
-        document.getElementById("editProfileModal").style.display = "flex";
-    }
-
-  // SAVE EDIT 
-    function saveProfileEdit(e) {
-        e.preventDefault(); // prevent form submission reload
-
-       const newUsername = document.getElementById("editUsername").value;
-       const newBio = document.getElementById("editBio").value;
-     
-       profileUser.username = newUsername;
-       profileUser.bio = newBio;
-       
-       const uploadInput = document.getElementById("uploadProfilePic");
-
-        // If a file is uploaded
-        if (uploadInput.files[0]) {
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                profileUser.profilePic = event.target.result;
-
-                let users = Storage.getUsers();
-
-                users = users.map(u => {
-                    if (u.id === profileUser.id) {
-                        return profileUser; // keep full object
-                    }
-                    return u;
-                });
-
-                Storage.saveUsers(users);
-
-                const currentUser = Storage.getCurrentUser();
-
-                if (currentUser && currentUser.id === profileUser.id) {
-                    localStorage.setItem("currentUser", JSON.stringify(profileUser));
-                }
-
-                document.getElementById("editProfileModal").style.display = "none";
-                loadProfile();
-            }
-            reader.readAsDataURL(uploadInput.files[0]);
-        } else {
-            let users = Storage.getUsers();
-
-            users = users.map(u => {
-                if (u.id === profileUser.id) {
-                    return profileUser; // keep full object
-                }
-                return u;
             });
+        }
+    }
 
-            Storage.saveUsers(users);
+    // Buttons show/hide
+    const editBtn = document.getElementById("editProfileBtn");
+    const followBtn = document.getElementById("followBtn");
 
-            const currentUser = Storage.getCurrentUser();
+    if (currentUser && currentUser.id == profileUser.id) {
+        if (editBtn) editBtn.style.display = "block";
+        if (followBtn) followBtn.style.display = "none";
+    } else {
+        if (editBtn) editBtn.style.display = "none";
+        if (followBtn) {
+            followBtn.style.display = "block";
+            updateFollowButton();
+            // Remove old listener and add new one
+            const newFollowBtn = followBtn.cloneNode(true);
+            followBtn.parentNode.replaceChild(newFollowBtn, followBtn);
+            newFollowBtn.addEventListener("click", handleFollow);
+        }
+    }
+}
 
-            if (currentUser && currentUser.id === profileUser.id) {
-                localStorage.setItem("currentUser", JSON.stringify(profileUser));
-            }
+function updateFollowersCount() {
+    const users = JSON.parse(localStorage.getItem("nexus_users")) || [];
+    const profileUser = getProfileUser();
+    
+    if (!profileUser) return;
+    
+    let followersCount = 0;
+    users.forEach(user => {
+        if (user.following && user.following.includes(profileUser.id)) {
+            followersCount++;
+        }
+    });
+    
+    const followersElement = document.getElementById("profileFollowersCount");
+    if (followersElement) {
+        followersElement.textContent = followersCount;
+    }
+}
 
+function updateFollowingCount() {
+    const profileUser = getProfileUser();
+    if (!profileUser) return;
+    
+    let followingCount = profileUser.following ? profileUser.following.length : 0;
+    
+    const followingElement = document.getElementById("profileFollowingCount");
+    if (followingElement) {
+        followingElement.textContent = followingCount;
+    }
+}
+
+function updateFollowButton() {
+    const currentUser = getCurrentUserSafe();
+    const profileUser = getProfileUser();
+    const btn = document.getElementById("followBtn");
+
+    if (!btn || !currentUser || !profileUser) return;
+
+    if (currentUser.id === profileUser.id) {
+        btn.style.display = "none";
+        return;
+    }
+
+    btn.style.display = "block";
+    const isFollowing = currentUser.following?.includes(profileUser.id);
+    btn.textContent = isFollowing ? "Unfollow" : "Follow";
+}
+
+function handleFollow() {
+    const currentUser = getCurrentUserSafe();
+    const profileUser = getProfileUser();
+
+    if (!currentUser || !profileUser) return;
+    
+    if (currentUser.id === profileUser.id) {
+        alert("You cannot follow yourself");
+        return;
+    }
+
+    if (!currentUser.following) currentUser.following = [];
+
+    const isFollowing = currentUser.following.includes(profileUser.id);
+    
+    if (isFollowing) {
+        currentUser.following = currentUser.following.filter(id => id !== profileUser.id);
+    } else {
+        currentUser.following.push(profileUser.id);
+    }
+
+    // Update users array
+    let users = JSON.parse(localStorage.getItem("nexus_users")) || [];
+    const userIndex = users.findIndex(u => u.id === currentUser.id);
+    if (userIndex !== -1) {
+        users[userIndex] = currentUser;
+    }
+
+    localStorage.setItem("nexus_users", JSON.stringify(users));
+    localStorage.setItem("currentUser", JSON.stringify(currentUser));
+
+    updateFollowButton();
+    updateFollowersCount();
+    updateFollowingCount();
+}
+
+function setupProfilePostCreation() {
+    const submitBtn = document.getElementById('submitPostBtn');
+    const textarea = document.getElementById('newPostContent');
+    
+    if (!submitBtn || !textarea) return;
+    
+    // Remove existing listeners to avoid duplicates
+    const newSubmitBtn = submitBtn.cloneNode(true);
+    submitBtn.parentNode.replaceChild(newSubmitBtn, submitBtn);
+    
+    newSubmitBtn.addEventListener('click', function() {
+        const content = textarea.value.trim();
+        
+        if (!content) {
+            alert('Please enter some content for your post.');
+            return;
+        }
+        
+        const currentUser = getCurrentUserSafe();
+        if (!currentUser) {
+            alert('You must be logged in to post.');
+            window.location.href = 'index.html';
+            return;
+        }
+        
+        let posts = JSON.parse(localStorage.getItem('nexus_posts')) || [];
+        
+        const newPost = {
+            id: Date.now().toString(),
+            userId: currentUser.id,
+            authorId: currentUser.id,
+            username: currentUser.username,
+            authorName: currentUser.username,
+            content: content,
+            createdAt: Date.now(),
+            likes: [],
+            comments: []
+        };
+        
+        posts.unshift(newPost);
+        localStorage.setItem('nexus_posts', JSON.stringify(posts));
+        
+        textarea.value = '';
+        loadProfile();
+        alert('Post created successfully!');
+    });
+}
+
+function deletePost(postId) {
+    let posts = JSON.parse(localStorage.getItem('nexus_posts')) || [];
+    posts = posts.filter(p => p.id != postId);
+    localStorage.setItem('nexus_posts', JSON.stringify(posts));
+    loadProfile();
+}
+
+function openEditProfile() {
+    const profileUser = getProfileUser();
+    document.getElementById("editUsername").value = profileUser.username;
+    document.getElementById("editBio").value = profileUser.bio || "";
+    document.getElementById("editProfileModal").style.display = "flex";
+}
+
+function saveProfileEdit(e) {
+    e.preventDefault();
+    
+    const profileUser = getProfileUser();
+    const newUsername = document.getElementById("editUsername").value;
+    const newBio = document.getElementById("editBio").value;
+    
+    profileUser.username = newUsername;
+    profileUser.bio = newBio;
+    
+    const uploadInput = document.getElementById("uploadProfilePic");
+
+    if (uploadInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            profileUser.profilePic = event.target.result;
+            saveUserAndUpdate(profileUser);
             document.getElementById("editProfileModal").style.display = "none";
             loadProfile();
         }
-    }
-
-    function handleFollow() {
-        const currentUser = Storage.getCurrentUser();
-        const profileUser = getProfileUser(); // function you already use
-
-        if (!currentUser || !profileUser) return;
-
-        if (!currentUser.following) currentUser.following = [];
-
-        const isFollowing = currentUser.following.includes(profileUser.id);
-
-        if (isFollowing) {
-            // UNFOLLOW
-            currentUser.following = currentUser.following.filter(id => id !== profileUser.id);
-        } else {
-            // FOLLOW
-            currentUser.following.push(profileUser.id);
-        }
-
-        // Save updated user
-        Storage.updateUser(currentUser);
-
-        // Update UI
-        function updateFollowButton() {
-            const currentUser = Storage.getCurrentUser();
-            const profileUser = getProfileUser();
-            const btn = document.getElementById("followBtn");
-
-            if (!btn || !currentUser || !profileUser) return;
-
-            // ❗ hide button if viewing your own profile
-            if (currentUser.id === profileUser.id) {
-                btn.style.display = "none";
-                return;
-            }
-
-            const isFollowing = currentUser.following?.includes(profileUser.id);
-
-            btn.textContent = isFollowing ? "Unfollow" : "Follow";
-        }
-
-        function updateFollowersCount() {
-            const users = Storage.getUsers();
-            const profileUser = getProfileUser();
-
-            let count = 0;
-
-            users.forEach(user => {
-                if (user.following?.includes(profileUser.id)) {
-                    count++;
-                }
-            });
-
-            document.getElementById("profileFollowersCount").textContent = count;
-        }
-    }
-
-    //  CLOSE MODAL =
-    function closeEditProfile() {
+        reader.readAsDataURL(uploadInput.files[0]);
+    } else {
+        saveUserAndUpdate(profileUser);
         document.getElementById("editProfileModal").style.display = "none";
+        loadProfile();
     }
-    
-    document.getElementById("editProfileBtn")
-        ?.addEventListener("click", openEditProfile);
+}
 
-    document.getElementById("saveProfileBtn")
-        ?.addEventListener("click", saveProfileEdit);
+function saveUserAndUpdate(updatedUser) {
+    let users = JSON.parse(localStorage.getItem('nexus_users')) || [];
+    users = users.map(u => u.id === updatedUser.id ? updatedUser : u);
+    localStorage.setItem('nexus_users', JSON.stringify(users));
 
-    document.getElementById("closeProfileBtn")
-        ?.addEventListener("click", closeEditProfile);
+    const currentUser = getCurrentUserSafe();
+    if (currentUser && currentUser.id === updatedUser.id) {
+        localStorage.setItem("currentUser", JSON.stringify(updatedUser));
+    }
+}
 
-    // RUN 
-    loadProfile();
-
-    document.getElementById("profileFollowersCount")
-        ?.addEventListener("click", () => openFollowModal("followers"));
-
-    document.getElementById("profileFollowingCount")
-        ?.addEventListener("click", () => openFollowModal("following"));
-
-    document.getElementById("closeFollowModal")
-        ?.addEventListener("click", () => {
-            document.getElementById("followModal").style.display = "none";
-        });
-    
-});
+function closeEditProfile() {
+    document.getElementById("editProfileModal").style.display = "none";
+}
 
 function openFollowModal(type) {
-    
     const users = JSON.parse(localStorage.getItem("nexus_users")) || [];
-    const params = new URLSearchParams(window.location.search);
-    const profileId = params.get("id");
-    const currentUser = Storage.getCurrentUser();
-
-    const profileUser = profileId
-        ? Storage.getUserById(profileId)
-        : currentUser;
-
-    console.log("PROFILE USER:", profileUser);
-    console.log("FOLLOWING:", profileUser.following);
-    console.log("ALL USERS:", users);
+    const profileUser = getProfileUser();
+    const currentUser = getCurrentUserSafe();
 
     const modal = document.getElementById("followModal");
     const list = document.getElementById("followModalList");
     const title = document.getElementById("followModalTitle");
 
+    if (!modal || !list) return;
+
     list.innerHTML = "";
 
     if (type === "following") {
-        title.textContent = "Following";
-
-        (profileUser.following || []).forEach(id => {
-            const user = users.find(u => String(u.id) === String(id));
-            if (user) {
-                const li = document.createElement("li");
-                li.textContent = user.username;
-                list.appendChild(li);
-            }
-        });
+        if (title) title.textContent = "Following";
+        const followingIds = profileUser.following || [];
+        
+        if (followingIds.length === 0) {
+            list.innerHTML = '<li style="color: gray;">Not following anyone yet</li>';
+        } else {
+            followingIds.forEach(id => {
+                const user = users.find(u => String(u.id) === String(id));
+                if (user) {
+                    const li = document.createElement("li");
+                    li.style.padding = "10px";
+                    li.style.borderBottom = "1px solid var(--border-color)";
+                    li.innerHTML = `<strong>${escapeHtml(user.username)}</strong>`;
+                    list.appendChild(li);
+                }
+            });
+        }
     }
 
     if (type === "followers") {
-        title.textContent = "Followers";
-
-        users.forEach(user => {
-            if (user.following?.map(String).includes(String(profileUser.id))) {
+        if (title) title.textContent = "Followers";
+        const followers = users.filter(user => user.following && user.following.includes(profileUser.id));
+        
+        if (followers.length === 0) {
+            list.innerHTML = '<li style="color: gray;">No followers yet</li>';
+        } else {
+            followers.forEach(user => {
                 const li = document.createElement("li");
-                li.textContent = user.username;
+                li.style.padding = "10px";
+                li.style.borderBottom = "1px solid var(--border-color)";
+                li.innerHTML = `<strong>${escapeHtml(user.username)}</strong>`;
                 list.appendChild(li);
-            }
-        });
+            });
+        }
     }
 
     modal.style.display = "flex";
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    return String(text).replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
 }
