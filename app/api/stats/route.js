@@ -1,6 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
@@ -9,9 +7,13 @@ export async function GET() {
       include: { followers: true },
     });
 
-    const avgFollowers =
-      usersWithFollowers.reduce((sum, u) => sum + u.followers.length, 0) /
-      (usersWithFollowers.length || 1);
+    const totalFollowers = await prisma.user.aggregate({
+      _count: { id: true },
+    });
+
+    const totalFollowRelations = await prisma.follow.count();
+
+    const avgFollowers = totalFollowRelations / (totalFollowers._count.id || 1);
 
     // 2. Average posts per user
     const usersWithPosts = await prisma.user.findMany({
@@ -106,11 +108,6 @@ allPosts.forEach(p => {
     words[word] = (words[word] || 0) + 1;
   });
 });
-const engagementScore = await prisma.post.aggregate({
-  _count: {
-    id: true,
-  },
-});
 
 const mostUsedWord = Object.entries(words)
   .sort((a, b) => b[1] - a[1])[0];
@@ -147,6 +144,8 @@ const mostUsedWord = Object.entries(words)
         : null,
 
       topEngagement,
+
+      mostUsedWord: mostUsedWord ? mostUsedWord[0] : null,
     });
 
   } catch (error) {
